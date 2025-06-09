@@ -1,155 +1,164 @@
-"use client"
-
-import { useState } from "react"
-import { Search, Menu, Filter, Clock, Users, Instagram, Facebook, Twitter } from "lucide-react"
+import React, { useState } from 'react';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import FilterBar from './components/FilterBar';
+import DebateCard from './components/DebateCard';
+import Footer from './components/Footer';
+import './App.css';
 
 function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState({});
+  const [filteredDebates, setFilteredDebates] = useState([]);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const debates = [
     {
       id: 1,
-      title: "¿Cuál es la mejor empanada?",
-      participants: 4,
-      timeLeft: "40 min",
-      category: "comida",
-      highlighted: true,
+      title: "¿Cuál es la mejor temporada?",
+      participants: "2/4",
+      participantCount: 2,
+      maxParticipants: 4,
+      author: "Por turnos",
+      duration: "40 min",
+      durationMinutes: 40,
+      tags: ["Comida"],
+      format: "Voz",
+      mode: "Por turnos"
     },
     {
       id: 2,
-      title: "Demócratas vs. Republicanos",
-      participants: 4,
-      timeLeft: "30 min",
-      category: "política",
+      title: "Comunismo vs. Capitalismo",
+      participants: "3/4",
+      participantCount: 3,
+      maxParticipants: 4,
+      author: "Libre",
+      duration: "30 min",
+      durationMinutes: 30,
+      tags: ["Política", "Economía"],
+      format: "Voz",
+      mode: "Libre"
     },
     {
       id: 3,
       title: "Eutanasia, ¿Sí o no?",
-      participants: 8,
-      timeLeft: "35 min",
-      category: "ética",
+      participants: "1/3",
+      participantCount: 1,
+      maxParticipants: 3,
+      author: "Por turnos",
+      duration: "35 min",
+      durationMinutes: 35,
+      tags: ["Ciencia", "Moral"],
+      format: "Voz",
+      mode: "Por turnos"
     },
-  ]
+    {
+      id: 4,
+      title: "Inteligencia Artificial: ¿Amenaza o Oportunidad?",
+      participants: "2/4",
+      participantCount: 2,
+      maxParticipants: 4,
+      author: "Moderado",
+      duration: "60 min",
+      durationMinutes: 60,
+      tags: ["Tecnología", "Filosofía"],
+      format: "Texto",
+      mode: "Moderado"
+    },
+    {
+      id: 5,
+      title: "El futuro del trabajo remoto",
+      participants: "3/4",
+      participantCount: 3,
+      maxParticipants: 4,
+      author: "Libre",
+      duration: "25 min",
+      durationMinutes: 25,
+      tags: ["Sociedad", "Tecnología"],
+      format: "Texto",
+      mode: "Libre"
+    }
+  ];
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
+  const handleApplyFilters = (filters) => {
+    setAppliedFilters(filters);
+    
+    let filtered = debates.filter(debate => {
+      // Filtro por tiempo
+      if (filters.Tiempo.min && debate.durationMinutes < parseInt(filters.Tiempo.min)) {
+        return false;
+      }
+      if (filters.Tiempo.max && debate.durationMinutes > parseInt(filters.Tiempo.max)) {
+        return false;
+      }
+
+      // Filtro por personas
+      if (filters.Personas.min && debate.participantCount < parseInt(filters.Personas.min)) {
+        return false;
+      }
+      if (filters.Personas.max && debate.participantCount > parseInt(filters.Personas.max)) {
+        return false;
+      }
+
+      // Filtro por modo
+      if (filters.Modo.length > 0 && !filters.Modo.includes(debate.mode)) {
+        return false;
+      }
+
+      // Filtro por dificultad
+      if (filters.Formato.length > 0 && !filters.Formato.includes(debate.format)) {
+        return false;
+      }
+
+      // Filtro por temática
+      if (filters.Temática.length > 0) {
+        const hasMatchingTag = debate.tags.some(tag => filters.Temática.includes(tag));
+        if (!hasMatchingTag) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    setFilteredDebates(filtered);
+  };
+
+  const debatesToShow = Object.keys(appliedFilters).length === 0 || 
+    Object.values(appliedFilters).every(filter => 
+      Array.isArray(filter) ? filter.length === 0 : 
+      typeof filter === 'object' ? Object.values(filter).every(v => v === '') : 
+      !filter
+    ) ? debates : filteredDebates;
 
   return (
     <div className="app">
-      {/* Overlay when sidebar is open */}
-      {sidebarOpen && <div className="overlay" onClick={toggleSidebar} />}
+      {sidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
+      
+      <Header onToggleSidebar={toggleSidebar} />
 
-      {/* Header */}
-      <header className="header">
-        <div>
-          <h1 className="logo">deb8</h1>
-        </div>
-
-        <div className="search-container">
-          <div className="search-wrapper">
-            <Search className="search-icon" />
-            <input type="text" placeholder="Buscar debates..." className="search-input" />
-          </div>
-        </div>
-
-        <button onClick={toggleSidebar} className="menu-button">
-          <Menu size={24} />
-        </button>
-      </header>
-
-      {/* Filter Bar */}
-      <div className="filter-bar">
-        <Filter className="filter-icon" />
-        <div className="filter-buttons">
-          {["Todos", "Mis", "Chat Gpt", "Personales", "Sociales"].map((filter) => (
-            <button key={filter} className="filter-button">
-              {filter}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
       <main className="main-content">
+        <FilterBar onApplyFilters={handleApplyFilters} />
+
+        <div className="results-info">
+          <span>{debatesToShow.length} debates encontrados</span>
+        </div>
+
         <div className="debates-grid">
-          {debates.map((debate) => (
-            <div key={debate.id} className={`debate-card ${debate.highlighted ? "highlighted" : ""}`}>
-              <h3 className="debate-title">{debate.title}</h3>
-
-              <div className="debate-stats">
-                <div className="stat-item">
-                  <Users className="stat-icon" />
-                  <span>{debate.participants}/4</span>
-                </div>
-                <div className="stat-item">
-                  <Clock className="stat-icon" />
-                  <span>{debate.timeLeft}</span>
-                </div>
-              </div>
-
-              <div className="debate-footer">
-                <span className="category-tag">{debate.category}</span>
-                <a href="#" className="debate-link">
-                  Por turnos
-                </a>
-              </div>
-            </div>
+          {debatesToShow.map(debate => (
+            <DebateCard key={debate.id} debate={debate} />
           ))}
         </div>
       </main>
 
-      {/* Sidebar */}
-      <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="sidebar-content">
-          <div className="sidebar-header">
-            <h2 className="sidebar-title">Menú</h2>
-            <button onClick={toggleSidebar} className="close-button">
-              ✕
-            </button>
-          </div>
+      <Footer />
 
-          <nav className="sidebar-nav">
-            <a href="#" className="nav-link">
-              Cuentas
-            </a>
-            <a href="#" className="nav-link">
-              Monedas
-            </a>
-            <a href="#" className="nav-link danger">
-              Cerrar Sesión
-            </a>
-          </nav>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-section">
-            <p>Contacto</p>
-            <p>Soporte</p>
-          </div>
-
-          <div className="footer-center">
-            <p className="footer-section">deb8 • 2025</p>
-          </div>
-
-          <div className="footer-right">
-            <p className="footer-section">Redes</p>
-            <div className="social-links">
-              <Instagram className="social-icon" />
-              <Facebook className="social-icon" />
-              <Twitter className="social-icon" />
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Floating Select Button */}
-      <button className="floating-button">Seleccionar</button>
+      <Sidebar isOpen={sidebarOpen} onClose={toggleSidebar} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
