@@ -1,22 +1,34 @@
 import {useForm} from 'react-hook-form';
 import {loginRequest} from '../api/auth.js'
+import { useNavigate } from 'react-router-dom';
 function LogInModal({ isOpen, onClose, onSwitchToRegister }) {
   if (!isOpen) return null
+  const navigate = useNavigate();
   const {register,handleSubmit} = useForm();
   const handleOverlayClick = (e) => {
     if (e.target.className === "modal-overlay") {
       onClose()
     }
   }
+  const irAHome = () => {
+    navigate('/');
+  };
   
 
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal">
         <form className="auth-form" onSubmit={handleSubmit(async (values) => {
-            console.log(values);
+          try{
             const res = await loginRequest(values);
-            console.log(res)
+            alert(res.data.message)
+            if (res.status == 200){
+              irAHome()
+            }
+          }catch(e){
+            alert(e.response.data.message)
+          }
+            
         })}>
           <div className="form-group">
             <label htmlFor="login-email">Email</label>

@@ -1,6 +1,7 @@
 import React from 'react';
 
 function Header({ onToggleSidebar }) {
+  
   return (
     <header className="header">
       <div className="logo">deb8</div>
