@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Header({ onToggleSidebar }) {
+function Header({ onToggleSidebar, user, loadingUser }) {
   
   return (
     <header className="header">
@@ -18,6 +18,17 @@ function Header({ onToggleSidebar }) {
           </svg>
         </button>
       </div>
+      
+      <div className="user-info">
+        {loadingUser ? (
+          <span>Cargando...</span>
+        ) : user ? (
+          <span>Hola, {user.username}</span>
+        ) : (
+          <span>No logueado</span>
+        )}
+      </div>
+
       <button className="hamburger" onClick={onToggleSidebar}>
         <span></span>
         <span></span>

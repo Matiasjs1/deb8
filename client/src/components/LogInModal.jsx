@@ -11,7 +11,7 @@ function LogInModal({ isOpen, onClose, onSwitchToRegister }) {
     }
   }
   const irAHome = () => {
-    navigate('/');
+    navigate('/home');
   };
   
 

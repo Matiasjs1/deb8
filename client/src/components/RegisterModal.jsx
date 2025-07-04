@@ -13,7 +13,7 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogIn }) {
     }
   }
   const irAHome = () => {
-    navigate('/');
+    navigate('/home');
   };
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import FilterBar from '../components/FilterBar.jsx';
 import DebateCard from '../components/DebateCard.jsx';
 import Footer from '../components/Footer.jsx';
+import { userRequest } from '../api/auth.js';
 import './Home.css'
 
 
@@ -11,6 +12,24 @@ function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({});
   const [filteredDebates, setFilteredDebates] = useState([]);
+  const [user, setUser] = useState(null);  
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await userRequest();
+        setUser(res.data);
+      } catch (error) {
+        console.error('Error cargando perfil:', error);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -139,7 +158,7 @@ function Home() {
     <div className="app">
       {sidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
       
-      <Header onToggleSidebar={toggleSidebar} />
+      <Header onToggleSidebar={toggleSidebar} user={user} loadingUser={loadingUser} />
 
       <main className="main-content">
         <FilterBar onApplyFilters={handleApplyFilters} />
