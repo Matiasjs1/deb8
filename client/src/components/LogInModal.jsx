@@ -1,5 +1,5 @@
 import {useForm} from 'react-hook-form';
-import {loginRequest} from '../api/auth.js'
+import {loginRequest, setToken} from '../api/auth.js'
 import { useNavigate } from 'react-router-dom';
 function LogInModal({ isOpen, onClose, onSwitchToRegister }) {
   if (!isOpen) return null
@@ -23,10 +23,15 @@ function LogInModal({ isOpen, onClose, onSwitchToRegister }) {
             const res = await loginRequest(values);
             alert(res.data.message)
             if (res.status == 200){
+              // El token ya viene en las cookies HTTP del backend
+              // Pero también podemos guardarlo en cookies del cliente como respaldo
+              if (res.data.token) {
+                setToken(res.data.token)
+              }
               irAHome()
             }
           }catch(e){
-            alert(e.response.data.message)
+            alert(e.response?.data?.message || 'Error al iniciar sesión')
           }
             
         })}>

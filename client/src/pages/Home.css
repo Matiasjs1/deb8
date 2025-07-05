@@ -526,6 +526,42 @@ body {
   background-color: #2a2f36;
 }
 
+.sidebar-user-info {
+  padding: 1.5rem;
+  border-bottom: 1px solid #2a2f36;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  background-color: #2a2f36;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d4ff;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.user-email {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
 .sidebar-content {
   padding: 1rem 0;
 }
@@ -559,6 +595,21 @@ body {
   background-color: rgba(0, 0, 0, 0.6);
   z-index: 1000;
   backdrop-filter: blur(2px);
+}
+
+/* Loading Styles */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #0f1419;
+}
+
+.loading {
+  color: #00d4ff;
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 /* Responsive Design */
@@ -639,4 +690,16 @@ body {
   .filter-icon {
     margin-top: 0;
   }
+}
+
+/* User Info Styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info span {
+  color: #ffffff;
+  font-size: 0.9rem;
 }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import FilterBar from '../components/FilterBar.jsx';
 import DebateCard from '../components/DebateCard.jsx';
 import Footer from '../components/Footer.jsx';
-import { userRequest } from '../api/auth.js';
+import { userRequest, isAuthenticated } from '../api/auth.js';
 import './Home.css'
 
 
@@ -14,6 +15,7 @@ function Home() {
   const [filteredDebates, setFilteredDebates] = useState([]);
   const [user, setUser] = useState(null);  
   const [loadingUser, setLoadingUser] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -22,13 +24,17 @@ function Home() {
         setUser(res.data);
       } catch (error) {
         console.error('Error cargando perfil:', error);
+        // Si hay un error de autenticación, redirigir al inicio
+        if (error.response?.status === 401) {
+          navigate('/');
+        }
       } finally {
         setLoadingUser(false);
       }
     };
 
     fetchUser();
-  }, []);
+  }, [navigate]);
 
 
   const toggleSidebar = () => {
@@ -153,6 +159,17 @@ function Home() {
       typeof filter === 'object' ? Object.values(filter).every(v => v === '') : 
       !filter
     ) ? debates : filteredDebates;
+
+  // Si está cargando, mostrar loading
+  if (loadingUser) {
+    return (
+      <div className="app">
+        <div className="loading-container">
+          <div className="loading">Cargando...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
