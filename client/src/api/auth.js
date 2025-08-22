@@ -12,9 +12,9 @@ const axiosInstance = axios.create({
   }
 })
 
-export const registerRequest = (user) => axiosInstance.post("/api/register", user)
-export const loginRequest = (user) => axiosInstance.post("/api/login", user)
-export const userRequest = () => axiosInstance.get("/api/profile")
+export const registerRequest = (user) => axiosInstance.post("/api/auth/register", user)
+export const loginRequest = (user) => axiosInstance.post("/api/auth/login", user)
+export const userRequest = () => axiosInstance.get("/api/auth/profile")
 
 // Funciones para manejar cookies del lado del cliente
 export const setToken = (token) => {

@@ -4,8 +4,10 @@ import Header from '../components/Header.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import FilterBar from '../components/FilterBar.jsx';
 import DebateCard from '../components/DebateCard.jsx';
+import CreateDebateModal from '../components/CreateDebateModal.jsx';
 import Footer from '../components/Footer.jsx';
 import { userRequest, isAuthenticated } from '../api/auth.js';
+import { getDebates } from '../api/debates.js';
 import './Home.css'
 
 
@@ -13,8 +15,11 @@ function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({});
   const [filteredDebates, setFilteredDebates] = useState([]);
+  const [debates, setDebates] = useState([]);
   const [user, setUser] = useState(null);  
   const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingDebates, setLoadingDebates] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +38,19 @@ function Home() {
       }
     };
 
+    const fetchDebates = async () => {
+      try {
+        const response = await getDebates();
+        setDebates(response.data.debates);
+      } catch (error) {
+        console.error('Error cargando debates:', error);
+      } finally {
+        setLoadingDebates(false);
+      }
+    };
+
     fetchUser();
+    fetchDebates();
   }, [navigate]);
 
 
@@ -41,91 +58,29 @@ function Home() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const debates = [
-    {
-      id: 1,
-      title: "¿Cuál es la mejor temporada?",
-      participants: "2/4",
-      participantCount: 2,
-      maxParticipants: 4,
-      author: "Por turnos",
-      duration: "40 min",
-      durationMinutes: 40,
-      tags: ["Comida"],
-      format: "Voz",
-      mode: "Por turnos"
-    },
-    {
-      id: 2,
-      title: "Comunismo vs. Capitalismo",
-      participants: "3/4",
-      participantCount: 3,
-      maxParticipants: 4,
-      author: "Libre",
-      duration: "30 min",
-      durationMinutes: 30,
-      tags: ["Política", "Economía"],
-      format: "Voz",
-      mode: "Libre"
-    },
-    {
-      id: 3,
-      title: "Eutanasia, ¿Sí o no?",
-      participants: "1/3",
-      participantCount: 1,
-      maxParticipants: 3,
-      author: "Por turnos",
-      duration: "35 min",
-      durationMinutes: 35,
-      tags: ["Ciencia", "Moral"],
-      format: "Voz",
-      mode: "Por turnos"
-    },
-    {
-      id: 4,
-      title: "Inteligencia Artificial: ¿Amenaza o Oportunidad?",
-      participants: "2/4",
-      participantCount: 2,
-      maxParticipants: 4,
-      author: "Moderado",
-      duration: "60 min",
-      durationMinutes: 60,
-      tags: ["Tecnología", "Filosofía"],
-      format: "Texto",
-      mode: "Moderado"
-    },
-    {
-      id: 5,
-      title: "El futuro del trabajo remoto",
-      participants: "3/4",
-      participantCount: 3,
-      maxParticipants: 4,
-      author: "Libre",
-      duration: "25 min",
-      durationMinutes: 25,
-      tags: ["Sociedad", "Tecnología"],
-      format: "Texto",
-      mode: "Libre"
-    }
-  ];
+  const handleDebateCreated = (newDebate) => {
+    setDebates(prevDebates => [newDebate, ...prevDebates]);
+  };
+
+
 
   const handleApplyFilters = (filters) => {
     setAppliedFilters(filters);
     
     let filtered = debates.filter(debate => {
       // Filtro por tiempo
-      if (filters.Tiempo.min && debate.durationMinutes < parseInt(filters.Tiempo.min)) {
+      if (filters.Tiempo.min && debate.duration < parseInt(filters.Tiempo.min)) {
         return false;
       }
-      if (filters.Tiempo.max && debate.durationMinutes > parseInt(filters.Tiempo.max)) {
+      if (filters.Tiempo.max && debate.duration > parseInt(filters.Tiempo.max)) {
         return false;
       }
 
       // Filtro por personas
-      if (filters.Personas.min && debate.participantCount < parseInt(filters.Personas.min)) {
+      if (filters.Personas.min && debate.currentParticipants < parseInt(filters.Personas.min)) {
         return false;
       }
-      if (filters.Personas.max && debate.participantCount > parseInt(filters.Personas.max)) {
+      if (filters.Personas.max && debate.currentParticipants > parseInt(filters.Personas.max)) {
         return false;
       }
 
@@ -134,7 +89,7 @@ function Home() {
         return false;
       }
 
-      // Filtro por dificultad
+      // Filtro por formato
       if (filters.Formato.length > 0 && !filters.Formato.includes(debate.format)) {
         return false;
       }
@@ -161,7 +116,7 @@ function Home() {
     ) ? debates : filteredDebates;
 
   // Si está cargando, mostrar loading
-  if (loadingUser) {
+  if (loadingUser || loadingDebates) {
     return (
       <div className="app">
         <div className="loading-container">
@@ -178,7 +133,19 @@ function Home() {
       <Header onToggleSidebar={toggleSidebar} user={user} loadingUser={loadingUser} />
 
       <main className="main-content">
-        <FilterBar onApplyFilters={handleApplyFilters} />
+        <div className="main-header">
+          <FilterBar onApplyFilters={handleApplyFilters} />
+          <button 
+            className="create-debate-btn"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Crear Debate
+          </button>
+        </div>
 
         <div className="results-info">
           <span>{debatesToShow.length} debates encontrados</span>
@@ -186,10 +153,16 @@ function Home() {
 
         <div className="debates-grid">
           {debatesToShow.map(debate => (
-            <DebateCard key={debate.id} debate={debate} />
+            <DebateCard key={debate._id} debate={debate} />
           ))}
         </div>
       </main>
+
+      <CreateDebateModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onDebateCreated={handleDebateCreated}
+      />
 
       <Footer />
 
