@@ -40,13 +40,31 @@ function FilterBar({ selectedFilters, onFilterSelect, onApplyFilters }) {
   };
 
   const handleInputChange = (filter, field, value) => {
-    setFilterValues(prev => ({
-      ...prev,
-      [filter]: {
-        ...prev[filter],
-        [field]: value
+    setFilterValues(prev => {
+      const updatedFilter = { ...prev[filter], [field]: value };
+  
+      // Convertir a número para comparar (o mantener string vacío si está vacío)
+      const min = Number(updatedFilter.min);
+      const max = Number(updatedFilter.max);
+  
+      // Reglas para asegurar que max sea al menos min + 1
+      if (field === 'min' && value !== '') {
+        if (!isNaN(max) && max <= min) {
+          updatedFilter.max = (min + 1).toString();
+        }
       }
-    }));
+  
+      if (field === 'max' && value !== '') {
+        if (!isNaN(min) && Number(value) <= min) {
+          updatedFilter.max = (min + 1).toString();
+        }
+      }
+  
+      return {
+        ...prev,
+        [filter]: updatedFilter
+      };
+    });
   };
 
   const handleMultiSelectChange = (filter, option) => {
@@ -91,7 +109,9 @@ function FilterBar({ selectedFilters, onFilterSelect, onApplyFilters }) {
                   type="number"
                   placeholder="0"
                   value={filterValues.Tiempo.min}
+                  min='0'
                   onChange={(e) => handleInputChange('Tiempo', 'min', e.target.value)}
+                  
                 />
               </div>
               <div className="input-group">
@@ -100,6 +120,7 @@ function FilterBar({ selectedFilters, onFilterSelect, onApplyFilters }) {
                   type="number"
                   placeholder="120"
                   value={filterValues.Tiempo.max}
+                  min={Number(filterValues.Tiempo.min) + 1 || 1}
                   onChange={(e) => handleInputChange('Tiempo', 'max', e.target.value)}
                 />
               </div>
