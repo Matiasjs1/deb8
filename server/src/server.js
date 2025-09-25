@@ -4,6 +4,15 @@ dotenv.config()
 
 const PORT = process.env.PORT || 4000
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+// Create HTTP server and attach Socket.IO
+import http from 'http'
+import { setupSockets } from './socket.js'
+
+const server = http.createServer(app)
+
+// Initialize WebSocket layer
+setupSockets(server)
+
+server.listen(PORT, () => {
+    console.log(`HTTP + WS server running on port ${PORT}`)
 })

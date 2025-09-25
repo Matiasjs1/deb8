@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function DebateCard({ debate }) {
+  const navigate = useNavigate();
+  const goToDebate = () => navigate(`/debates/${debate._id}`)
   return (
-    <div className="debate-card">
+    <div className="debate-card" onClick={goToDebate} style={{ cursor: 'pointer' }}>
       <div className="card-header">
         <h3 className="debate-title">{debate.title}</h3>
         <div className="participants">

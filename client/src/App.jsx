@@ -5,6 +5,7 @@ import Home from './pages/Home.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import Profile from './pages/Profile.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import DebateRoom from './pages/DebateRoom.jsx'
 
 function App() {
 
@@ -21,6 +22,11 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/debates/:id" element={
+            <ProtectedRoute>
+              <DebateRoom />
             </ProtectedRoute>
           } />
           <Route path="/" element={<LandingPage />} />
