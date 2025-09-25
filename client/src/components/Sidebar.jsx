@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userRequest, removeToken, isAuthenticated } from '../api/auth.js';
+import { useI18n } from '../i18n/LocaleProvider.jsx';
 
 function Sidebar({ isOpen, onClose }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -15,7 +17,7 @@ function Sidebar({ isOpen, onClose }) {
           setUser(res.data);
         }
       } catch (error) {
-        console.error('Error cargando perfil:', error);
+        console.error('Error cargando Perfil:', error);
         // Si hay error de autenticación, limpiar token
         if (error.response?.status === 401) {
           removeToken();
@@ -35,6 +37,11 @@ function Sidebar({ isOpen, onClose }) {
     onClose();
   };
 
+  const handleSettingsClick = () => {
+    navigate('/settings');
+    onClose();
+  };
+
   const handleLogout = () => {
     removeToken();
     navigate('/');
@@ -43,19 +50,19 @@ function Sidebar({ isOpen, onClose }) {
 
   const menuItems = [
     { 
-      label: 'Mi Perfil', 
+      label: t('sidebar.my_profile'), 
       icon: '👤', 
       onClick: handleProfileClick,
       show: user !== null 
     },
     { 
-      label: 'Ajustes', 
+      label: t('sidebar.settings'), 
       icon: '⚙️', 
-      onClick: () => console.log('Ajustes'),
+      onClick: handleSettingsClick,
       show: true 
     },
     { 
-      label: 'Cerrar Sesión', 
+      label: t('sidebar.logout'), 
       icon: '🚪', 
       onClick: handleLogout,
       show: user !== null 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { createDebate } from '../api/debates.js';
 import './CreateDebateModal.css';
+import { useI18n } from '../i18n/LocaleProvider.jsx';
 
 function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -73,7 +75,7 @@ function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Crear Nuevo Debate</h2>
+          <h2>{t('createModal.title')}</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
@@ -81,7 +83,7 @@ function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
           {error && <div className="error-message">{error}</div>}
 
           <div className="form-group">
-            <label htmlFor="title">Título del Debate *</label>
+            <label htmlFor="title">{t('createModal.debate_title')}</label>
             <input
               type="text"
               id="title"
@@ -89,26 +91,26 @@ function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
               value={formData.title}
               onChange={handleInputChange}
               required
-              placeholder="Ej: ¿Cuál es la mejor temporada?"
+              placeholder={t('createModal.debate_title')}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Descripción *</label>
+            <label htmlFor="description">{t('createModal.debate_description')}</label>
             <textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               required
-              placeholder="Describe el tema del debate..."
+              placeholder={t('createModal.debate_description')}
               rows="3"
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="maxParticipants">Máximo de Participantes</label>
+              <label htmlFor="maxParticipants">{t('createModal.max_participants')}</label>
               <select
                 id="maxParticipants"
                 name="maxParticipants"
@@ -123,65 +125,65 @@ function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="duration">Duración (minutos)</label>
+              <label htmlFor="duration">{t('createModal.duration')}</label>
               <select
                 id="duration"
                 name="duration"
                 value={formData.duration}
                 onChange={handleInputChange}
               >
-                <option value={15}>15 min</option>
-                <option value={20}>20 min</option>
-                <option value={25}>25 min</option>
-                <option value={30}>30 min</option>
-                <option value={35}>35 min</option>
-                <option value={40}>40 min</option>
-                <option value={45}>45 min</option>
-                <option value={50}>50 min</option>
-                <option value={55}>55 min</option>
-                <option value={60}>60 min</option>
+                <option value={15}>15 {t('common.minutes')}</option>
+                <option value={20}>20 {t('common.minutes')}</option>
+                <option value={25}>25 {t('common.minutes')}</option>
+                <option value={30}>30 {t('common.minutes')}</option>
+                <option value={35}>35 {t('common.minutes')}</option>
+                <option value={40}>40 {t('common.minutes')}</option>
+                <option value={45}>45 {t('common.minutes')}</option>
+                <option value={50}>50 {t('common.minutes')}</option>
+                <option value={55}>55 {t('common.minutes')}</option>
+                <option value={60}>60 {t('common.minutes')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="format">Formato</label>
+              <label htmlFor="format">{t('createModal.format')}</label>
               <select
                 id="format"
                 name="format"
                 value={formData.format}
                 onChange={handleInputChange}
               >
-                <option value="Voz">Voz</option>
-                <option value="Texto">Texto</option>
+                <option value="Voz">{t('createModal.voice')}</option>
+                <option value="Texto">{t('createModal.text')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label htmlFor="mode">Modo</label>
+              <label htmlFor="mode">{t('createModal.mode')}</label>
               <select
                 id="mode"
                 name="mode"
                 value={formData.mode}
                 onChange={handleInputChange}
               >
-                <option value="Libre">Libre</option>
-                <option value="Por turnos">Por turnos</option>
-                <option value="Moderado">Moderado</option>
+                <option value="Libre">{t('createModal.free')}</option>
+                <option value="Por turnos">{t('createModal.turn_based')}</option>
+                <option value="Moderado">{t('createModal.moderated')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="tags">Etiquetas</label>
+            <label htmlFor="tags">{t('createModal.tags')}</label>
             <div className="tag-input-container">
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                placeholder="Agregar etiqueta..."
+                placeholder={t('createModal.add_tag')}
               />
               <button type="button" onClick={handleAddTag} className="add-tag-btn">
                 +
@@ -205,10 +207,10 @@ function CreateDebateModal({ isOpen, onClose, onDebateCreated }) {
 
           <div className="form-actions">
             <button type="button" onClick={onClose} className="cancel-btn">
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button type="submit" className="create-btn" disabled={loading}>
-              {loading ? 'Creando...' : 'Crear Debate'}
+              {loading ? t('createModal.creating') : t('createModal.create_debate')}
             </button>
           </div>
         </form>

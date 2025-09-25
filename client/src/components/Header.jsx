@@ -1,6 +1,8 @@
 import React from 'react';
+import { useI18n } from '../i18n/LocaleProvider.jsx';
 
 function Header({ onToggleSidebar, user, loadingUser }) {
+  const { t } = useI18n();
   
   return (
     <header className="header">
@@ -8,7 +10,7 @@ function Header({ onToggleSidebar, user, loadingUser }) {
       <div className="search-container">
         <input 
           type="text" 
-          placeholder="Buscar un debate" 
+          placeholder={t('common.search_placeholder')} 
           className="search-input"
         />
         <button className="search-button">
@@ -21,11 +23,11 @@ function Header({ onToggleSidebar, user, loadingUser }) {
       
       <div className="user-info">
         {loadingUser ? (
-          <span>Cargando...</span>
+          <span>{t('common.loading')}</span>
         ) : user ? (
-          <span>Hola, {user.username}</span>
+          <span>{t('common.hello')}, {user.username}</span>
         ) : (
-          <span>No logueado</span>
+          <span>{t('common.not_logged_in')}</span>
         )}
       </div>
 

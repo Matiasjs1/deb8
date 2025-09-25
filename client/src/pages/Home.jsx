@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Sidebar from '../components/Sidebar.jsx';
-import FilterBar from '../components/FilterBar.jsx';
+import FilterBar from '../components/FilterBarI18n.jsx';
 import DebateCard from '../components/DebateCard.jsx';
 import CreateDebateModal from '../components/CreateDebateModal.jsx';
 import Footer from '../components/Footer.jsx';
@@ -10,9 +10,11 @@ import { userRequest, isAuthenticated } from '../api/auth.js';
 import { getDebates } from '../api/debates.js';
 import './Home.css'
 import { connectSocket, getSocket } from '../api/socket.js'
+import { useI18n } from '../i18n/LocaleProvider.jsx'
 
 
 function Home() {
+  const { t } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({});
   const [filteredDebates, setFilteredDebates] = useState([]);
@@ -146,7 +148,7 @@ function Home() {
     return (
       <div className="app">
         <div className="loading-container">
-          <div className="loading">Cargando...</div>
+          <div className="loading">{t('common.loading')}</div>
         </div>
       </div>
     );
@@ -169,12 +171,12 @@ function Home() {
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Crear Debate
+            {t('home.create_debate')}
           </button>
         </div>
 
         <div className="results-info">
-          <span>{debatesToShow.length} debates encontrados</span>
+          <span>{debatesToShow.length} {t('home.debates_found')}</span>
         </div>
 
         <div className="debates-grid">
