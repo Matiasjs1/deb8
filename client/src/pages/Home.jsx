@@ -9,6 +9,7 @@ import Footer from '../components/Footer.jsx';
 import { userRequest, isAuthenticated } from '../api/auth.js';
 import { getDebates } from '../api/debates.js';
 import './Home.css'
+import { connectSocket, getSocket } from '../api/socket.js'
 
 
 function Home() {
@@ -51,16 +52,41 @@ function Home() {
 
     fetchUser();
     fetchDebates();
-  }, [navigate]);
 
+    // Conectar Socket y suscribirse a eventos de tiempo real para el Home
+    connectSocket();
+    const s = getSocket();
+    if (s) {
+      const onCreated = (debate) => {
+        setDebates((prev) => {
+          if (prev.find(d => d._id === debate._id)) return prev; // evitar duplicados
+          return [debate, ...prev];
+        });
+      };
+      const onUpdated = (payload) => {
+        setDebates((prev) => prev.map(d => d._id === payload._id ? { ...d, ...payload } : d));
+      };
+      const onDeleted = ({ _id }) => {
+        setDebates((prev) => prev.filter(d => d._id !== _id));
+      };
+
+      s.on('debate_created', onCreated);
+      s.on('debate_updated', onUpdated);
+      s.on('debate_deleted', onDeleted);
+
+      return () => {
+        s.off('debate_created', onCreated);
+        s.off('debate_updated', onUpdated);
+        s.off('debate_deleted', onDeleted);
+      };
+    }
+  }, [navigate]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const handleDebateCreated = (newDebate) => {
-    setDebates(prevDebates => [newDebate, ...prevDebates]);
-  };
+  // Evitar duplicados: no agregamos localmente al crear; nos apoyamos en el evento socket 'debate_created'
+  const handleDebateCreated = () => {};
 
 
 
@@ -153,7 +179,7 @@ function Home() {
 
         <div className="debates-grid">
           {debatesToShow.map(debate => (
-            <DebateCard key={debate._id} debate={debate} />
+            <DebateCard key={debate._id} debate={debate} currentUser={user} />
           ))}
         </div>
       </main>

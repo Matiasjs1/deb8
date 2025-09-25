@@ -1,21 +1,58 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { deleteDebate } from '../api/debates.js';
+import './DebateCard.css';
 
-function DebateCard({ debate }) {
+function DebateCard({ debate, currentUser }) {
   const navigate = useNavigate();
   const goToDebate = () => navigate(`/debates/${debate._id}`)
+  const authorId = debate?.author?._id || debate?.author?.id || debate?.author
+  const currentUserId = currentUser?._id || currentUser?.id
+  const sameId = !!(currentUserId && authorId && String(authorId) === String(currentUserId))
+  const sameUsername = !!(currentUser?.username && debate?.author?.username && String(currentUser.username) === String(debate.author.username))
+  const isAuthor = sameId || sameUsername
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm('¿Eliminar este debate?')) return;
+    try {
+      await deleteDebate(debate._id);
+    } catch (err) {
+      alert(err.response?.data?.message || 'No se pudo eliminar el debate');
+    }
+  }
   return (
     <div className="debate-card" onClick={goToDebate} style={{ cursor: 'pointer' }}>
       <div className="card-header">
         <h3 className="debate-title">{debate.title}</h3>
-        <div className="participants">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          <span>{debate.currentParticipants}/{debate.maxParticipants}</span>
+        <div className="card-actions">
+          <div className="participants">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>{debate.currentParticipants}/{debate.maxParticipants}</span>
+          </div>
+          {isAuthor && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(e);
+              }}
+              title="Eliminar debate"
+              className="trash-btn"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/>
+                <path d="M14 11v6"/>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
       <div className="card-footer">

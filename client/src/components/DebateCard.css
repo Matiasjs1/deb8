@@ -1,0 +1,60 @@
+/* Header layout */
+.debate-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.debate-card .debate-title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.debate-card .card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Participants badge */
+.debate-card .participants {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #9bb3c9;
+  font-weight: 500;
+}
+
+/* Trash (delete) button */
+.trash-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #102332;
+  border: 1px solid #17324d;
+  color: #cde;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 200ms ease, border-color 200ms ease, color 200ms ease, background 200ms ease;
+}
+
+.trash-btn svg {
+  pointer-events: none;
+}
+
+.trash-btn:hover {
+  transform: translateY(-1px) scale(1.06);
+  border-color: #2a5b8a;
+  color: #ff6b6e;
+  background: #132b3e;
+  box-shadow: 0 0 12px rgba(255, 107, 110, 0.35), inset 0 0 8px rgba(0, 212, 255, 0.15);
+}
+
+.trash-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 0 6px rgba(255, 107, 110, 0.25), inset 0 0 6px rgba(0, 212, 255, 0.12);
+}

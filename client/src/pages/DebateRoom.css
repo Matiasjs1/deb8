@@ -1,0 +1,41 @@
+/* Header actions in DebateRoom */
+.room-actions {
+  gap: 10px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #102332;
+  border: 1px solid #17324d;
+  color: #cde;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 200ms ease, border-color 200ms ease, color 200ms ease, background 200ms ease;
+}
+
+.icon-btn svg {
+  pointer-events: none;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px) scale(1.06);
+  border-color: #2a5b8a;
+  color: #ff6b6e;
+  background: #132b3e;
+  box-shadow: 0 0 12px rgba(255, 107, 110, 0.35), inset 0 0 8px rgba(0, 212, 255, 0.15);
+}
+
+.icon-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 0 6px rgba(255, 107, 110, 0.25), inset 0 0 6px rgba(0, 212, 255, 0.12);
+}
+
+/* Variant for exit button: slightly different hue */
+.exit-btn:hover {
+  color: #00d4ff;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35), inset 0 0 8px rgba(0, 212, 255, 0.15);
+}

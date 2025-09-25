@@ -5,6 +5,13 @@ import Debate from './models/debate.model.js'
 // In-memory message store (MVP). For production, persist to Mongo.
 const messagesStore = new Map() // debateId -> [{ userId, username, content, ts }]
 
+// Keep a module-scoped reference to io so other modules (controllers)
+// can emit application-wide events.
+let ioRef = null
+export function getIO() {
+  return ioRef
+}
+
 function parseCookies(cookieHeader = '') {
   return cookieHeader.split(';').reduce((acc, part) => {
     const [key, ...v] = part.trim().split('=')
@@ -21,6 +28,9 @@ export function setupSockets(server) {
       credentials: true
     }
   })
+
+  // Expose globally
+  ioRef = io
 
   // Auth middleware using JWT from cookies
   io.use((socket, next) => {
