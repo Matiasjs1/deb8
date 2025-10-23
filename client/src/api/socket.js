@@ -8,7 +8,8 @@ export function getSocket() {
 
 export function connectSocket() {
   if (!socket || !socket.connected) {
-    socket = io('http://localhost:4000', {
+    const url = import.meta.env.VITE_API_BASE || undefined
+    socket = io(url, {
       withCredentials: true,
       transports: ['websocket', 'polling']
     })

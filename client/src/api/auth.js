@@ -1,7 +1,7 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
-const API = "http://localhost:4000"
+const API = import.meta.env.VITE_API_BASE || ''
 
 // Configurar axios para enviar cookies automáticamente
 const axiosInstance = axios.create({
