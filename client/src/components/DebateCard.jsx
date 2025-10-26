@@ -5,7 +5,10 @@ import './DebateCard.css';
 
 function DebateCard({ debate, currentUser }) {
   const navigate = useNavigate();
-  const goToDebate = () => navigate(`/debates/${debate._id}`)
+  const goToDebate = () => {
+    const route = debate.format === 'Voz' ? `/voice-debates/${debate._id}` : `/debates/${debate._id}`
+    navigate(route)
+  }
   const authorId = debate?.author?._id || debate?.author?.id || debate?.author
   const currentUserId = currentUser?._id || currentUser?.id
   const sameId = !!(currentUserId && authorId && String(authorId) === String(currentUserId))
