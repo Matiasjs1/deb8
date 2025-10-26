@@ -49,3 +49,30 @@ export function setTyping(debateId, typing) {
   if (!socket) return
   socket.emit('typing', { debateId, typing })
 }
+
+// --- Voice/WebRTC signaling helpers ---
+export function rtcJoin(debateId, cb) {
+  const s = connectSocket()
+  if (s.connected) s.emit('rtc_join', { debateId }, cb)
+  else s.on('connect', () => s.emit('rtc_join', { debateId }, cb))
+}
+
+export function rtcLeave(debateId) {
+  if (!socket) return
+  socket.emit('rtc_leave', { debateId })
+}
+
+export function rtcSendOffer(debateId, targetUserId, description) {
+  if (!socket) return
+  socket.emit('rtc_offer', { debateId, targetUserId, description })
+}
+
+export function rtcSendAnswer(debateId, targetUserId, description) {
+  if (!socket) return
+  socket.emit('rtc_answer', { debateId, targetUserId, description })
+}
+
+export function rtcSendIce(debateId, targetUserId, candidate) {
+  if (!socket) return
+  socket.emit('rtc_ice', { debateId, targetUserId, candidate })
+}

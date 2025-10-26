@@ -47,6 +47,9 @@ export function setupSockets(server) {
     }
   })
 
+  // Voice rooms state: debateId -> Map(userId -> socketId)
+  const voiceRooms = new Map()
+
   io.on('connection', (socket) => {
     // Join a debate room
     socket.on('join_room', async ({ debateId }, cb) => {
@@ -132,8 +135,98 @@ export function setupSockets(server) {
       }
     })
 
+    // --- WebRTC signaling for Voice debates ---
+    socket.on('rtc_join', async ({ debateId }, cb) => {
+      try {
+        if (!debateId) throw new Error('debateId requerido')
+        const debate = await Debate.findById(debateId)
+          .populate('participants.user', 'username')
+        if (!debate) throw new Error('Debate no encontrado')
+        if (debate.status === 'Cerrado') throw new Error('Debate cerrado')
+        if (debate.format !== 'Voz') throw new Error('Este debate no es de voz')
+
+        const isParticipant = debate.participants.some(p => {
+          const uid = (p.user && p.user._id) ? p.user._id.toString() : (p.user ? p.user.toString() : '')
+          return uid === socket.user.id
+        })
+        if (!isParticipant) throw new Error('No eres participante de este debate')
+
+        socket.join(debateId)
+
+        let roomMap = voiceRooms.get(debateId)
+        if (!roomMap) {
+          roomMap = new Map()
+          voiceRooms.set(debateId, roomMap)
+        }
+        // Register user -> socket
+        roomMap.set(socket.user.id, socket.id)
+
+        // Build peers list excluding self
+        const peers = []
+        for (const [uid, sid] of roomMap.entries()) {
+          if (uid !== socket.user.id) {
+            const pInfo = debate.participants.find(p => (p.user?._id || p.user).toString() === uid)
+            peers.push({ userId: uid, socketId: sid, username: pInfo?.user?.username || 'Usuario' })
+          }
+        }
+        cb && cb({ ok: true, peers })
+
+        // Notify others of new peer
+        socket.to(debateId).emit('rtc_peer_joined', { userId: socket.user.id })
+      } catch (error) {
+        cb && cb({ ok: false, error: error.message })
+      }
+    })
+
+    socket.on('rtc_leave', ({ debateId }) => {
+      if (!debateId) return
+      socket.leave(debateId)
+      const roomMap = voiceRooms.get(debateId)
+      if (roomMap) {
+        roomMap.delete(socket.user.id)
+        if (roomMap.size === 0) voiceRooms.delete(debateId)
+      }
+      socket.to(debateId).emit('rtc_peer_left', { userId: socket.user.id })
+    })
+
+    socket.on('rtc_offer', ({ debateId, targetUserId, description }) => {
+      const roomMap = voiceRooms.get(debateId)
+      if (!roomMap) return
+      const targetSocketId = roomMap.get(targetUserId)
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('rtc_offer', { fromUserId: socket.user.id, description })
+      }
+    })
+
+    socket.on('rtc_answer', ({ debateId, targetUserId, description }) => {
+      const roomMap = voiceRooms.get(debateId)
+      if (!roomMap) return
+      const targetSocketId = roomMap.get(targetUserId)
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('rtc_answer', { fromUserId: socket.user.id, description })
+      }
+    })
+
+    socket.on('rtc_ice', ({ debateId, targetUserId, candidate }) => {
+      const roomMap = voiceRooms.get(debateId)
+      if (!roomMap) return
+      const targetSocketId = roomMap.get(targetUserId)
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('rtc_ice', { fromUserId: socket.user.id, candidate })
+      }
+    })
+
     socket.on('disconnect', () => {
-      // No-op; rooms auto-clean on disconnect
+      // Cleanup from all voice rooms
+      for (const [debateId, roomMap] of voiceRooms.entries()) {
+        if (roomMap.get(socket.user?.id) === socket.id) {
+          roomMap.delete(socket.user.id)
+          if (roomMap.size === 0) {
+            voiceRooms.delete(debateId)
+          }
+          socket.to(debateId).emit('rtc_peer_left', { userId: socket.user.id })
+        }
+      }
     })
   })
 }
