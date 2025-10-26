@@ -17,6 +17,7 @@ router.get('/', getAllDebates)
 router.get('/:id', getDebate)
 
 // Rutas protegidas (requieren autenticación)
+console.log('validateToken tipo:', typeof validateToken)
 router.use(validateToken)
 
 router.post('/', createDebate)
