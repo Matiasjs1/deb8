@@ -493,6 +493,14 @@ export default function VoiceDebateRoom() {
 
   return (
     <div className="voice-debate-container">
+      {/* Debug info - remover después */}
+      <div style={{ position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.8)', padding: 10, borderRadius: 8, fontSize: 12, zIndex: 9999, color: '#0f0' }}>
+        <div>Speaking: {Array.from(speakingUsers).join(', ') || 'ninguno'}</div>
+        <div>Muted: {Array.from(mutedUsers).join(', ') || 'ninguno'}</div>
+        <div>Audio enabled: {audioEnabled ? 'Sí' : 'No'}</div>
+        <div>Is muted: {isMuted ? 'Sí' : 'No'}</div>
+      </div>
+      
       <div className="voice-debate-main">
         <div className="voice-debate-header">
           <div>
@@ -526,11 +534,13 @@ export default function VoiceDebateRoom() {
           {participants.map((participant) => {
             const isSpeaking = speakingUsers.has(participant.socketId)
             const isMutedUser = mutedUsers.has(participant.socketId)
+            const isLocalUser = participant.isLocal
+            const hasAudio = isLocalUser ? audioEnabled : true
             
             return (
               <div 
                 key={participant.socketId} 
-                className={`voice-participant ${participant.isLocal ? 'local' : ''} ${isSpeaking ? 'speaking' : ''}`}
+                className={`voice-participant ${isLocalUser ? 'local' : ''} ${isSpeaking ? 'speaking' : ''}`}
               >
                 <div className="participant-avatar">
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -540,10 +550,12 @@ export default function VoiceDebateRoom() {
                 </div>
                 <div className="participant-name">
                   {participant.username}
-                  {participant.isLocal && ' (Tú)'}
+                  {isLocalUser && ' (Tú)'}
                 </div>
                 <div className="participant-status">
-                  {isMutedUser ? (
+                  {!hasAudio && isLocalUser ? (
+                    <span className="status-idle">Sin audio</span>
+                  ) : isMutedUser ? (
                     <span className="status-muted">🔇 Silenciado</span>
                   ) : isSpeaking ? (
                     <span className="status-speaking">🎤 Hablando</span>
