@@ -26,6 +26,7 @@ export default function VoiceDebateRoom() {
   const audioContextRef = useRef(null)
   const analyserRef = useRef(null)
   const speakingTimeoutRef = useRef(null)
+  const isDetectingRef = useRef(false) // Control flag for detection loop
 
   const ICE_SERVERS = {
     iceServers: [
@@ -302,7 +303,7 @@ export default function VoiceDebateRoom() {
   }
 
   const detectSpeaking = () => {
-    if (!analyserRef.current) return
+    if (!analyserRef.current || !isDetectingRef.current) return
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
     analyserRef.current.getByteFrequencyData(dataArray)
@@ -349,7 +350,7 @@ export default function VoiceDebateRoom() {
     }
 
     // Continue monitoring
-    if (audioEnabled) {
+    if (isDetectingRef.current) {
       requestAnimationFrame(detectSpeaking)
     }
   }
@@ -367,8 +368,6 @@ export default function VoiceDebateRoom() {
       })
       
       localStreamRef.current = stream
-      setAudioEnabled(true)
-      setIsConnecting(false)
 
       // Setup audio analysis for speaking detection
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
@@ -378,7 +377,13 @@ export default function VoiceDebateRoom() {
       const source = audioContextRef.current.createMediaStreamSource(stream)
       source.connect(analyserRef.current)
 
+      // Set audio enabled BEFORE starting detection
+      setAudioEnabled(true)
+      setIsConnecting(false)
+
       // Start detecting speaking
+      isDetectingRef.current = true
+      console.log('🎤 Iniciando detección de audio...')
       detectSpeaking()
 
       // Create peer connections with all existing participants
@@ -394,6 +399,9 @@ export default function VoiceDebateRoom() {
   }
 
   const stopAudio = () => {
+    // Stop detection loop
+    isDetectingRef.current = false
+    
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop())
       localStreamRef.current = null
