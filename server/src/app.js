@@ -17,9 +17,9 @@ connectdb()
 const isProd = process.env.NODE_ENV === 'production'
 if (!isProd) {
   app.use(cors({
-      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-      credentials: true
-    }))
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true
+  }))
 }
 app.use(helmet())
 app.use(morgan('dev'))
@@ -38,7 +38,7 @@ const __dirname = path.dirname(__filename)
 if (isProd) {
   const clientDist = path.resolve(__dirname, '../../client/dist')
   app.use(express.static(clientDist))
-  app.get('/*', (req, res) => {
+  app.use((req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'))
   })
 }
