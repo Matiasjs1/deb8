@@ -16,11 +16,16 @@ export default function VoiceDebateRoom() {
   const [isMuted, setIsMuted] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
+  const [speakingUsers, setSpeakingUsers] = useState(new Set()) // socketIds of users currently speaking
+  const [mutedUsers, setMutedUsers] = useState(new Set()) // socketIds of muted users
 
   const localStreamRef = useRef(null)
   const peerConnectionsRef = useRef({}) // socketId -> RTCPeerConnection
   const remoteStreamsRef = useRef({}) // socketId -> MediaStream
   const audioElementsRef = useRef({}) // socketId -> HTMLAudioElement
+  const audioContextRef = useRef(null)
+  const analyserRef = useRef(null)
+  const speakingTimeoutRef = useRef(null)
 
   const ICE_SERVERS = {
     iceServers: [
@@ -123,6 +128,32 @@ export default function VoiceDebateRoom() {
           }
         })
 
+        // Handle speaking status updates
+        s.on('user_speaking', ({ socketId, isSpeaking }) => {
+          setSpeakingUsers(prev => {
+            const next = new Set(prev)
+            if (isSpeaking) {
+              next.add(socketId)
+            } else {
+              next.delete(socketId)
+            }
+            return next
+          })
+        })
+
+        // Handle muted status updates
+        s.on('user_muted', ({ socketId, isMuted }) => {
+          setMutedUsers(prev => {
+            const next = new Set(prev)
+            if (isMuted) {
+              next.add(socketId)
+            } else {
+              next.delete(socketId)
+            }
+            return next
+          })
+        })
+
       } catch (err) {
         console.error(err)
         alert('Error cargando el debate')
@@ -142,6 +173,8 @@ export default function VoiceDebateRoom() {
         s.off('webrtc_answer')
         s.off('webrtc_ice_candidate')
         s.off('debate_deleted')
+        s.off('user_speaking')
+        s.off('user_muted')
       }
     }
   }, [debateId, navigate])
@@ -266,6 +299,53 @@ export default function VoiceDebateRoom() {
     delete remoteStreamsRef.current[socketId]
   }
 
+  const detectSpeaking = () => {
+    if (!analyserRef.current) return
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+    analyserRef.current.getByteFrequencyData(dataArray)
+
+    // Calculate average volume
+    const average = dataArray.reduce((a, b) => a + b) / dataArray.length
+    const threshold = 15 // Adjust this value to change sensitivity
+
+    const isSpeaking = average > threshold
+
+    // Update local speaking state
+    setSpeakingUsers(prev => {
+      const next = new Set(prev)
+      if (isSpeaking && !isMuted) {
+        next.add('local')
+      } else {
+        next.delete('local')
+      }
+      return next
+    })
+
+    // Notify others
+    const s = getSocket()
+    if (s && !isMuted) {
+      if (isSpeaking) {
+        s.emit('voice_speaking', { debateId, isSpeaking: true })
+        
+        // Clear previous timeout
+        if (speakingTimeoutRef.current) {
+          clearTimeout(speakingTimeoutRef.current)
+        }
+        
+        // Set timeout to stop speaking indicator
+        speakingTimeoutRef.current = setTimeout(() => {
+          s.emit('voice_speaking', { debateId, isSpeaking: false })
+        }, 500)
+      }
+    }
+
+    // Continue monitoring
+    if (audioEnabled) {
+      requestAnimationFrame(detectSpeaking)
+    }
+  }
+
   const startAudio = async () => {
     try {
       setIsConnecting(true)
@@ -281,6 +361,17 @@ export default function VoiceDebateRoom() {
       localStreamRef.current = stream
       setAudioEnabled(true)
       setIsConnecting(false)
+
+      // Setup audio analysis for speaking detection
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
+      analyserRef.current = audioContextRef.current.createAnalyser()
+      analyserRef.current.fftSize = 256
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream)
+      source.connect(analyserRef.current)
+
+      // Start detecting speaking
+      detectSpeaking()
 
       // Create peer connections with all existing participants
       const otherParticipants = participants.filter(p => !p.isLocal)
@@ -300,11 +391,23 @@ export default function VoiceDebateRoom() {
       localStreamRef.current = null
     }
 
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close()
+      audioContextRef.current = null
+    }
+
+    // Clear speaking timeout
+    if (speakingTimeoutRef.current) {
+      clearTimeout(speakingTimeoutRef.current)
+    }
+
     // Close all peer connections
     Object.keys(peerConnectionsRef.current).forEach(socketId => {
       closePeerConnection(socketId)
     })
 
+    setSpeakingUsers(new Set())
     setAudioEnabled(false)
   }
 
@@ -313,7 +416,37 @@ export default function VoiceDebateRoom() {
       const audioTrack = localStreamRef.current.getAudioTracks()[0]
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled
-        setIsMuted(!audioTrack.enabled)
+        const newMutedState = !audioTrack.enabled
+        setIsMuted(newMutedState)
+        
+        // Notify others about mute status
+        const s = getSocket()
+        if (s) {
+          s.emit('voice_muted', { debateId, isMuted: newMutedState })
+        }
+
+        // Update local muted users set
+        setMutedUsers(prev => {
+          const next = new Set(prev)
+          if (newMutedState) {
+            next.add('local')
+          } else {
+            next.delete('local')
+          }
+          return next
+        })
+
+        // Clear speaking state when muted
+        if (newMutedState) {
+          setSpeakingUsers(prev => {
+            const next = new Set(prev)
+            next.delete('local')
+            return next
+          })
+          if (s) {
+            s.emit('voice_speaking', { debateId, isSpeaking: false })
+          }
+        }
       }
     }
   }
@@ -379,28 +512,37 @@ export default function VoiceDebateRoom() {
         </div>
 
         <div className="voice-participants-grid">
-          {participants.map((participant) => (
-            <div 
-              key={participant.socketId} 
-              className={`voice-participant ${participant.isLocal ? 'local' : ''} ${audioEnabled && participant.isLocal && !isMuted ? 'speaking' : ''}`}
-            >
-              <div className="participant-avatar">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div className="participant-name">
-                {participant.username}
-                {participant.isLocal && ' (Tú)'}
-              </div>
-              {participant.isLocal && audioEnabled && (
-                <div className="participant-status">
-                  {isMuted ? '🔇 Silenciado' : '🎤 Hablando'}
+          {participants.map((participant) => {
+            const isSpeaking = speakingUsers.has(participant.socketId)
+            const isMutedUser = mutedUsers.has(participant.socketId)
+            
+            return (
+              <div 
+                key={participant.socketId} 
+                className={`voice-participant ${participant.isLocal ? 'local' : ''} ${isSpeaking ? 'speaking' : ''}`}
+              >
+                <div className="participant-avatar">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
                 </div>
-              )}
-            </div>
-          ))}
+                <div className="participant-name">
+                  {participant.username}
+                  {participant.isLocal && ' (Tú)'}
+                </div>
+                <div className="participant-status">
+                  {isMutedUser ? (
+                    <span className="status-muted">🔇 Silenciado</span>
+                  ) : isSpeaking ? (
+                    <span className="status-speaking">🎤 Hablando</span>
+                  ) : (
+                    <span className="status-idle">🎤 Conectado</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         <div className="voice-controls">

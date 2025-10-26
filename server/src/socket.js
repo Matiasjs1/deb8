@@ -171,6 +171,19 @@ export function setupSockets(server) {
       }
     })
 
+    // Voice status updates
+    socket.on('voice_speaking', ({ debateId, isSpeaking }) => {
+      if (debateId) {
+        socket.to(debateId).emit('user_speaking', { socketId: socket.id, userId: socket.user.id, isSpeaking })
+      }
+    })
+
+    socket.on('voice_muted', ({ debateId, isMuted }) => {
+      if (debateId) {
+        socket.to(debateId).emit('user_muted', { socketId: socket.id, userId: socket.user.id, isMuted })
+      }
+    })
+
     // Leave a debate room
     socket.on('leave_room', ({ debateId }) => {
       if (debateId) {
