@@ -38,7 +38,7 @@ const __dirname = path.dirname(__filename)
 if (isProd) {
   const clientDist = path.resolve(__dirname, '../../client/dist')
   app.use(express.static(clientDist))
-  app.get('*', (req, res) => {
+  app.get('/*', (req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'))
   })
 }
