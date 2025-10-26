@@ -173,14 +173,18 @@ export function setupSockets(server) {
 
     // Voice status updates
     socket.on('voice_speaking', ({ debateId, isSpeaking }) => {
+      console.log('🎤 [SERVER] voice_speaking recibido:', socket.id, isSpeaking)
       if (debateId) {
         socket.to(debateId).emit('user_speaking', { socketId: socket.id, userId: socket.user.id, isSpeaking })
+        console.log('📡 [SERVER] Emitiendo user_speaking a sala:', debateId)
       }
     })
 
     socket.on('voice_muted', ({ debateId, isMuted }) => {
+      console.log('🔇 [SERVER] voice_muted recibido:', socket.id, isMuted)
       if (debateId) {
         socket.to(debateId).emit('user_muted', { socketId: socket.id, userId: socket.user.id, isMuted })
+        console.log('📡 [SERVER] Emitiendo user_muted a sala:', debateId)
       }
     })
 

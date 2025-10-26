@@ -130,6 +130,7 @@ export default function VoiceDebateRoom() {
 
         // Handle speaking status updates
         s.on('user_speaking', ({ socketId, isSpeaking }) => {
+          console.log('🎤 Usuario hablando:', socketId, isSpeaking)
           setSpeakingUsers(prev => {
             const next = new Set(prev)
             if (isSpeaking) {
@@ -143,6 +144,7 @@ export default function VoiceDebateRoom() {
 
         // Handle muted status updates
         s.on('user_muted', ({ socketId, isMuted }) => {
+          console.log('🔇 Usuario muteado:', socketId, isMuted)
           setMutedUsers(prev => {
             const next = new Set(prev)
             if (isMuted) {
@@ -311,6 +313,11 @@ export default function VoiceDebateRoom() {
 
     const isSpeaking = average > threshold
 
+    // Debug log
+    if (isSpeaking && !isMuted) {
+      console.log('🎤 Detectado audio local, nivel:', average)
+    }
+
     // Update local speaking state
     setSpeakingUsers(prev => {
       const next = new Set(prev)
@@ -326,6 +333,7 @@ export default function VoiceDebateRoom() {
     const s = getSocket()
     if (s && !isMuted) {
       if (isSpeaking) {
+        console.log('📡 Emitiendo voice_speaking a otros usuarios')
         s.emit('voice_speaking', { debateId, isSpeaking: true })
         
         // Clear previous timeout
@@ -419,9 +427,12 @@ export default function VoiceDebateRoom() {
         const newMutedState = !audioTrack.enabled
         setIsMuted(newMutedState)
         
+        console.log('🔇 Cambiando estado de mute:', newMutedState)
+        
         // Notify others about mute status
         const s = getSocket()
         if (s) {
+          console.log('📡 Emitiendo voice_muted a otros usuarios:', newMutedState)
           s.emit('voice_muted', { debateId, isMuted: newMutedState })
         }
 
