@@ -33,20 +33,20 @@ function LandingPage() {
     <div className="app">
       {/* Header */}
       <header className="header">
-        <div className="logo">deb8</div>
-        <div className="auth-buttons">
-          <button className="log-in-btn" onClick={openLogIn}>
+        <h1 className="logo">deb8</h1>
+        <nav className="auth-buttons" aria-label="Autenticación">
+          <button className="log-in-btn" onClick={openLogIn} aria-label="Iniciar sesión">
             Log in
           </button>
-          <button className="register-btn" onClick={openRegister}>
+          <button className="register-btn" onClick={openRegister} aria-label="Registrarse">
             Register
           </button>
-        </div>
+        </nav>
       </header>
 
       {/* Main Content */}
       <main className="main-content">
-        <h1 className="welcome-title">Bienvenido a deb8</h1>
+        <h2 className="welcome-title">Bienvenido a deb8</h2>
       </main>
 
       {/* Modals */}
