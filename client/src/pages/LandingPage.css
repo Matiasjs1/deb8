@@ -54,11 +54,10 @@ body {
 }
 
 .register-btn {
-  background: #2b6cb0;
+  background: #4299e1;
   border: none;
   color: white;
   font-size: 16px;
-  font-weight: 600;
   cursor: pointer;
   padding: 10px 20px;
   border-radius: 6px;
@@ -66,7 +65,7 @@ body {
 }
 
 .register-btn:hover {
-  background: #2c5282;
+  background: #3182ce;
 }
 
 /* Main Content */

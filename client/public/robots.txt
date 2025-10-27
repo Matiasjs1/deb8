@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://deb8-i2su.onrender.com/sitemap.xml

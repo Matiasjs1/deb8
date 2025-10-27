@@ -6,7 +6,6 @@ import cookieParser from 'cookie-parser'
 import errorHandler from './middlewares/errorHandler.js'
 import cors from 'cors'
 import helmet from 'helmet'
-import compression from 'compression'
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -22,37 +21,7 @@ if (!isProd) {
     credentials: true
   }))
 }
-
-// Configuración de seguridad mejorada con Helmet
-// Compresión gzip/brotli
-app.use(compression())
-
-app.use(helmet({
-  contentSecurityPolicy: isProd ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "ws:"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: []
-    }
-  } : false, // Deshabilitar CSP en desarrollo
-  hsts: isProd ? {
-    maxAge: 31536000, // 1 año
-    includeSubDomains: true,
-    preload: true
-  } : false, // Deshabilitar HSTS en desarrollo
-  frameguard: {
-    action: 'deny'
-  },
-  referrerPolicy: {
-    policy: 'strict-origin-when-cross-origin'
-  }
-}))
+app.use(helmet())
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(cookieParser())
@@ -68,18 +37,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 if (isProd) {
   const clientDist = path.resolve(__dirname, '../../client/dist')
-  // Servir archivos estáticos con caché optimizado
-  app.use(express.static(clientDist, {
-    maxAge: '1y',
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-      if (path.endsWith('.html')) {
-        // No cachear HTML para obtener actualizaciones
-        res.setHeader('Cache-Control', 'no-cache')
-      }
-    }
-  }))
+  app.use(express.static(clientDist))
   app.use((req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'))
   })

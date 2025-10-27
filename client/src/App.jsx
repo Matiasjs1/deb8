@@ -1,15 +1,14 @@
-import React, { lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { LocaleProvider } from './i18n/LocaleProvider.jsx'
 
-// Lazy loading de componentes para mejorar el rendimiento
-const Home = lazy(() => import('./pages/Home.jsx'))
-const LandingPage = lazy(() => import('./pages/LandingPage.jsx'))
-const Profile = lazy(() => import('./pages/Profile.jsx'))
-const ProtectedRoute = lazy(() => import('./components/ProtectedRoute.jsx'))
-const DebateRoom = lazy(() => import('./pages/DebateRoom.jsx'))
-const VoiceDebateRoom = lazy(() => import('./pages/VoiceDebateRoom.jsx'))
-const Settings = lazy(() => import('./pages/Settings.jsx'))
+import Home from './pages/Home.jsx'
+import LandingPage from './pages/LandingPage.jsx'
+import Profile from './pages/Profile.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import DebateRoom from './pages/DebateRoom.jsx'
+import VoiceDebateRoom from './pages/VoiceDebateRoom.jsx'
+import Settings from './pages/Settings.jsx'
+import { LocaleProvider } from './i18n/LocaleProvider.jsx'
 
 function App() {
 
@@ -18,36 +17,34 @@ function App() {
      <>
       <LocaleProvider>
         <BrowserRouter>
-          <Suspense fallback={<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white'}}>Cargando...</div>}>
-            <Routes>
-              <Route path="/home" element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              <Route path="/debates/:id" element={
-                <ProtectedRoute>
-                  <DebateRoom />
-                </ProtectedRoute>
-              } />
-              <Route path="/voice-debates/:id" element={
-                <ProtectedRoute>
-                  <VoiceDebateRoom />
-                </ProtectedRoute>
-              } />
-              <Route path="/" element={<LandingPage />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            <Route path="/home" element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/debates/:id" element={
+              <ProtectedRoute>
+                <DebateRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/voice-debates/:id" element={
+              <ProtectedRoute>
+                <VoiceDebateRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/" element={<LandingPage />} />
+          </Routes>
         </BrowserRouter>
       </LocaleProvider>
     </>
