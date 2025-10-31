@@ -165,9 +165,32 @@ export default function VoiceDebateRoom() {
     }
     init()
 
-    return () => {
-      stopAudio()
+    // Ensure leaving is registered on unload or tab background
+    const leaveUrl = `${(import.meta.env.VITE_API_BASE || '')}/api/debates/${debateId}/leave`
+    const sendLeaveKeepalive = () => {
+      try {
+        fetch(leaveUrl, { method: 'PATCH', credentials: 'include', keepalive: true })
+      } catch (_) {}
       leaveVoiceDebateRoom(debateId)
+    }
+
+    const onBeforeUnload = () => {
+      sendLeaveKeepalive()
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sendLeaveKeepalive()
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      // Final cleanup
+      stopAudio()
+      sendLeaveKeepalive()
       const s = getSocket()
       if (s) {
         s.off('voice_user_joined')

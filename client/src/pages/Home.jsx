@@ -88,7 +88,10 @@ function Home() {
     setSidebarOpen(!sidebarOpen);
   };
   // Evitar duplicados: no agregamos localmente al crear; nos apoyamos en el evento socket 'debate_created'
-  const handleDebateCreated = () => {};
+  const handleDebateCreated = (debate) => {
+    const route = debate.format === 'Voz' ? `/voice-debates/${debate._id}` : `/debates/${debate._id}`;
+    navigate(route);
+  };
 
 
 

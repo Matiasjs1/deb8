@@ -93,8 +93,31 @@ export default function DebateRoom() {
     }
     init()
 
-    return () => {
+    // Ensure leaving is registered on unload or tab background
+    const leaveUrl = `${(import.meta.env.VITE_API_BASE || '')}/api/debates/${debateId}/leave`
+    const sendLeaveKeepalive = () => {
+      try {
+        fetch(leaveUrl, { method: 'PATCH', credentials: 'include', keepalive: true })
+      } catch (_) {}
       leaveDebateRoom(debateId)
+    }
+
+    const onBeforeUnload = () => {
+      sendLeaveKeepalive()
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sendLeaveKeepalive()
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      // Final cleanup
+      sendLeaveKeepalive()
       const s = getSocket()
       if (s) {
         s.off('message')
