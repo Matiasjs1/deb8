@@ -100,6 +100,13 @@ export const translations = {
       updated_at: 'Última actualización',
       back_home: 'Volver al inicio'
     }
+    ,
+    footer: {
+      contact: 'Contacto',
+      support: 'Soporte',
+      social: 'Redes',
+      copyright: 'deb8 © 2025'
+    }
   },
   en: {
     app: { brand: 'deb8' },
@@ -201,6 +208,13 @@ export const translations = {
       created_at: 'Created at',
       updated_at: 'Updated at',
       back_home: 'Back to home'
+    }
+    ,
+    footer: {
+      contact: 'Contact',
+      support: 'Support',
+      social: 'Social',
+      copyright: 'deb8 © 2025'
     }
   }
 }
