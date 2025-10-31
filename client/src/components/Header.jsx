@@ -20,7 +20,7 @@ function Header({ onToggleSidebar, user, loadingUser }) {
           </svg>
         </button>
       </div>
-      
+      {/*Hola usuario
       <div className="user-info">
         {loadingUser ? (
           <span>{t('common.loading')}</span>
@@ -30,7 +30,7 @@ function Header({ onToggleSidebar, user, loadingUser }) {
           <span>{t('common.not_logged_in')}</span>
         )}
       </div>
-
+      */}
       <button className="hamburger" onClick={onToggleSidebar}>
         <span></span>
         <span></span>

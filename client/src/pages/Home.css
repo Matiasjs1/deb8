@@ -678,6 +678,10 @@ body {
     right: -280px;
   }
 
+  .sidebar.sidebar-open {
+    right: 0;
+  }
+
   .filter-tags {
     gap: 0.5rem;
   }
