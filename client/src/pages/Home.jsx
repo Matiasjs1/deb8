@@ -17,6 +17,7 @@ function Home() {
   const { t } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
   const [filteredDebates, setFilteredDebates] = useState([]);
   const [debates, setDebates] = useState([]);
   const [user, setUser] = useState(null);  
@@ -139,12 +140,29 @@ function Home() {
     setFilteredDebates(filtered);
   };
 
-  const debatesToShow = Object.keys(appliedFilters).length === 0 || 
+  const handleSearchChange = (value) => {
+    setSearchTerm(value || '');
+  };
+
+  const handleSearchSubmit = () => {
+    // No-op for now; filtering happens reactively via searchTerm
+  };
+
+  const baseByFilters = Object.keys(appliedFilters).length === 0 || 
     Object.values(appliedFilters).every(filter => 
       Array.isArray(filter) ? filter.length === 0 : 
       typeof filter === 'object' ? Object.values(filter).every(v => v === '') : 
       !filter
     ) ? debates : filteredDebates;
+
+  const debatesToShow = baseByFilters.filter(d => {
+    if (!searchTerm) return true;
+    try {
+      return (d.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+    } catch {
+      return true;
+    }
+  });
 
   // Si está cargando, mostrar loading
   if (loadingUser || loadingDebates) {
@@ -161,7 +179,14 @@ function Home() {
     <div className="app">
       {sidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
       
-      <Header onToggleSidebar={toggleSidebar} user={user} loadingUser={loadingUser} />
+      <Header 
+        onToggleSidebar={toggleSidebar} 
+        user={user} 
+        loadingUser={loadingUser}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
+      />
 
       <main className="main-content">
         <div className="main-header">
