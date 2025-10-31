@@ -53,7 +53,11 @@ export default function DebateRoom() {
           // opcional: usar debate desde socket callback si viene más fresco
           if (resp.debate) {
             setDebate((prev) => ({ ...prev, ...resp.debate, participants: resp.debate.participants?.map(p => ({ user: { _id: p.id, username: p.username } })) }))
+            // Default moderator to author if server didn't send one
+            const authorId = resp.debate?.author?._id || resp.debate?.author?.id || resp.debate?.author
+            setTurnState((prev) => ({ ...prev, moderatorId: prev.moderatorId ?? (authorId || null) }))
           }
+
           if (resp.turnState) {
             setTurnState(resp.turnState)
           }
@@ -77,13 +81,15 @@ export default function DebateRoom() {
         })
         s.on('turn_state', (payload) => {
           if (!payload || payload.debateId !== debateId) return
-          setTurnState({
+          const authorId = (resp?.debate?.author?._id || resp?.debate?.author?.id || resp?.debate?.author)
+          setTurnState(prev => ({
             speakingUserId: payload.speakingUserId ?? null,
             turnEndsAt: payload.turnEndsAt ?? null,
             queue: payload.queue || [],
-            moderatorId: payload.moderatorId ?? null
-          })
+            moderatorId: payload.moderatorId ?? prev.moderatorId ?? authorId ?? null
+          }))
         })
+
         s.on('queue_updated', (payload) => {
           if (!payload || payload.debateId !== debateId) return
           setTurnState(prev => ({ ...prev, queue: payload.queue || [] }))
