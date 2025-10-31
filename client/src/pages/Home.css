@@ -26,6 +26,9 @@ body {
   padding: 1rem 2rem;
   background-color: #0f1419;
   border-bottom: 1px solid #1e2328;
+  position: sticky;
+  top: 0;
+  z-index: 900;
 }
 
 .logo {
@@ -84,6 +87,7 @@ body {
   flex-direction: column;
   gap: 4px;
   padding: 0.5rem;
+  z-index: 901;
 }
 
 .hamburger span {
@@ -133,7 +137,6 @@ body {
 
 /* Filter Bar */
 .filter-bar {
-    
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
@@ -323,7 +326,6 @@ body {
   gap: 0.75rem;
   align-items: center;
   animation: slideIn 0.3s ease;
-
 }
 
 @keyframes slideIn {
@@ -376,14 +378,12 @@ body {
   margin-bottom: 1.5rem;
   color: #9ca3af;
   font-size: 0.9rem;
-  
 }
 
 /* Debates Grid */
 .debates-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -395,7 +395,6 @@ body {
   padding: 1.5rem;
   transition: all 0.3s ease;
   cursor: pointer;
-  
 }
 
 .debate-card:hover {
@@ -430,7 +429,6 @@ body {
 }
 
 .card-footer {
-
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -444,7 +442,6 @@ body {
   gap: 0.5rem;
   color: #9ca3af;
   font-size: 0.85rem;
-
 }
 
 .tags {
@@ -526,7 +523,7 @@ body {
   background-color: #1e2328;
   border-left: 1px solid #2a2f36;
   transition: right 0.3s ease;
-  z-index: 1001;
+  z-index: 2001;
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -623,7 +620,7 @@ body {
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.6);
-  z-index: 1000;
+  z-index: 2000;
   backdrop-filter: blur(2px);
 }
 
