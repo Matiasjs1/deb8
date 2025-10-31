@@ -171,8 +171,10 @@ export default function DebateRoom() {
     // Block send if mode requires turn and it's not this user's turn
     const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
     const userId = user?._id || user?.id
+    const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(userId)
     if (requiresTurn) {
-      if (!turnState?.speakingUserId || String(turnState.speakingUserId) !== String(userId)) {
+      const canBypass = debate?.mode === 'Moderado' && isModerator
+      if (!canBypass && (!turnState?.speakingUserId || String(turnState.speakingUserId) !== String(userId))) {
         alert('No es tu turno para hablar.')
         return
       }
@@ -189,7 +191,8 @@ export default function DebateRoom() {
     // Only mark typing if allowed (or always in Libre)
     const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
     const userId = user?._id || user?.id
-    const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(userId))
+    const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(userId)
+    const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(userId)) || (debate?.mode === 'Moderado' && isModerator)
     if (!allowed) return
     setTyping(debateId, true)
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
@@ -272,6 +275,18 @@ export default function DebateRoom() {
                 {(() => {
                   const uid = user?._id || user?.id
                   const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
+                  if (isModerator && (turnState.queue?.length || 0) > 0) {
+                    const firstId = turnState.queue[0]
+                    const firstName = (debate.participants||[]).find(p => String(p.user?._id||p.user?.id) === String(firstId))?.user?.username || 'Usuario'
+                    return (
+                      <button onClick={() => moderatorGrant(firstId)} className="icon-btn" title={`Conceder a ${firstName}`}>Conceder ({firstName})</button>
+                    )
+                  }
+                  return null
+                })()}
+                {(() => {
+                  const uid = user?._id || user?.id
+                  const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
                   if (isModerator) return null
                   const inQueue = (turnState?.queue || []).some(id => String(id) === String(uid))
                   const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
@@ -339,7 +354,8 @@ export default function DebateRoom() {
             {(() => {
               const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
               const uid = user?._id || user?.id
-              const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid))
+              const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
+              const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)) || (debate?.mode === 'Moderado' && isModerator)
               return (
                 <>
                   <input
@@ -378,7 +394,7 @@ export default function DebateRoom() {
           ))}
           {turnState.queue?.length > 0 && (
             <div style={{ marginTop: 12, color: '#9aa', fontSize: 12 }}>
-              En cola: {turnState.queue.length}
+              En cola: {turnState.queue.map(uid => (debate.participants||[]).find(p => String(p.user?._id||p.user?.id) === String(uid))?.user?.username || 'Usuario').join(', ')}
             </div>
           )}
         </div>
