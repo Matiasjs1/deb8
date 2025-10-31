@@ -501,14 +501,15 @@ export default function VoiceDebateRoom() {
 
   return (
     <div className="voice-debate-container">
-      {/* Debug info - remover después */}
+      {/* Debug info - remover después
+
       <div style={{ position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.8)', padding: 10, borderRadius: 8, fontSize: 12, zIndex: 9999, color: '#0f0' }}>
         <div>Speaking: {Array.from(speakingUsers).join(', ') || 'ninguno'}</div>
         <div>Muted: {Array.from(mutedUsers).join(', ') || 'ninguno'}</div>
         <div>Audio enabled: {audioEnabled ? 'Sí' : 'No'}</div>
         <div>Is muted: {isMuted ? 'Sí' : 'No'}</div>
       </div>
-      
+      */}      
       <div className="voice-debate-main">
         <div className="voice-debate-header">
           <div>
