@@ -128,6 +128,12 @@ export default function VoiceDebateRoom() {
             navigate('/home')
           }
         })
+        s.on('debate_closed', ({ _id }) => {
+          if (String(_id) === String(debateId)) {
+            alert('El debate ha finalizado por tiempo.')
+            navigate('/home')
+          }
+        })
 
         // Handle speaking status updates
         s.on('user_speaking', ({ socketId, isSpeaking }) => {
@@ -201,6 +207,7 @@ export default function VoiceDebateRoom() {
         s.off('debate_deleted')
         s.off('user_speaking')
         s.off('user_muted')
+        s.off('debate_closed')
       }
     }
   }, [debateId, navigate])

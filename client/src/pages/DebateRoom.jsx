@@ -85,6 +85,12 @@ export default function DebateRoom() {
             navigate('/home')
           }
         })
+        s.on('debate_closed', ({ _id }) => {
+          if (String(_id) === String(debateId)) {
+            alert('El debate ha finalizado por tiempo.')
+            navigate('/home')
+          }
+        })
       } catch (err) {
         console.error(err)
         alert('Error cargando el debate')
@@ -125,6 +131,7 @@ export default function DebateRoom() {
         s.off('system')
         s.off('participants_update')
         s.off('debate_deleted')
+        s.off('debate_closed')
       }
     }
   }, [debateId, navigate])
