@@ -15,6 +15,7 @@ export default function DebateRoom() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [typingUsers, setTypingUsers] = useState(new Set())
+  const [turnState, setTurnState] = useState({ speakingUserId: null, turnEndsAt: null, queue: [], moderatorId: null })
 
   const endRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -53,6 +54,9 @@ export default function DebateRoom() {
           if (resp.debate) {
             setDebate((prev) => ({ ...prev, ...resp.debate, participants: resp.debate.participants?.map(p => ({ user: { _id: p.id, username: p.username } })) }))
           }
+          if (resp.turnState) {
+            setTurnState(resp.turnState)
+          }
           setLoading(false)
         })
 
@@ -70,6 +74,19 @@ export default function DebateRoom() {
         })
         s.on('system', (evt) => {
           // Could handle join/leave notifications
+        })
+        s.on('turn_state', (payload) => {
+          if (!payload || payload.debateId !== debateId) return
+          setTurnState({
+            speakingUserId: payload.speakingUserId ?? null,
+            turnEndsAt: payload.turnEndsAt ?? null,
+            queue: payload.queue || [],
+            moderatorId: payload.moderatorId ?? null
+          })
+        })
+        s.on('queue_updated', (payload) => {
+          if (!payload || payload.debateId !== debateId) return
+          setTurnState(prev => ({ ...prev, queue: payload.queue || [] }))
         })
         s.on('participants_update', (payload) => {
           if (!payload || payload.debateId !== debateId) return
@@ -129,6 +146,8 @@ export default function DebateRoom() {
         s.off('message')
         s.off('typing')
         s.off('system')
+        s.off('turn_state')
+        s.off('queue_updated')
         s.off('participants_update')
         s.off('debate_deleted')
         s.off('debate_closed')
@@ -143,6 +162,15 @@ export default function DebateRoom() {
   const handleSend = () => {
     const txt = input.trim()
     if (!txt) return
+    // Block send if mode requires turn and it's not this user's turn
+    const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+    const userId = user?._id || user?.id
+    if (requiresTurn) {
+      if (!turnState?.speakingUserId || String(turnState.speakingUserId) !== String(userId)) {
+        alert('No es tu turno para hablar.')
+        return
+      }
+    }
     sendDebateMessage(debateId, txt, (resp) => {
       if (!resp?.ok) alert(resp?.error || 'No se pudo enviar el mensaje')
     })
@@ -152,9 +180,41 @@ export default function DebateRoom() {
 
   const handleTyping = (val) => {
     setInput(val)
+    // Only mark typing if allowed (or always in Libre)
+    const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+    const userId = user?._id || user?.id
+    const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(userId))
+    if (!allowed) return
     setTyping(debateId, true)
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => setTyping(debateId, false), 1200)
+  }
+
+  // Turn helpers
+  const requestSpeak = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('request_speak', { debateId })
+  }
+  const cancelRequest = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('cancel_request', { debateId })
+  }
+  const moderatorGrant = (targetUserId) => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('moderator_grant', { debateId, userId: targetUserId })
+  }
+  const moderatorRevoke = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('moderator_revoke', { debateId })
+  }
+  const moderatorNext = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('moderator_next', { debateId })
   }
 
   const handleLeave = async () => {
@@ -193,6 +253,43 @@ export default function DebateRoom() {
           </div>
           <div className="room-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ color: '#9aa' }}>Modo: {debate.mode}</div>
+            {(debate.mode === 'Por turnos' || debate.mode === 'Moderado') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ color: '#6cc', fontSize: 12 }}>
+                  {(() => {
+                    const uid = user?._id || user?.id
+                    const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
+                    const remaining = turnState?.turnEndsAt ? Math.max(0, Math.floor((new Date(turnState.turnEndsAt).getTime() - Date.now())/1000)) : null
+                    return isYourTurn ? `Tu turno${remaining !== null ? ` • ${remaining}s` : ''}` : `Esperando turno${remaining !== null ? ` • ${remaining}s` : ''}`
+                  })()}
+                </div>
+                {(() => {
+                  const uid = user?._id || user?.id
+                  const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
+                  if (isModerator) return null
+                  const inQueue = (turnState?.queue || []).some(id => String(id) === String(uid))
+                  const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
+                  return !isYourTurn ? (
+                    inQueue ? (
+                      <button onClick={cancelRequest} className="icon-btn" title="Cancelar pedido">Cancelar</button>
+                    ) : (
+                      <button onClick={requestSpeak} className="icon-btn" title="Pedir turno">Pedir turno</button>
+                    )
+                  ) : null
+                })()}
+                {(() => {
+                  const uid = user?._id || user?.id
+                  const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
+                  if (!isModerator) return null
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button onClick={moderatorNext} className="icon-btn" title="Siguiente">Siguiente</button>
+                      <button onClick={moderatorRevoke} className="icon-btn" title="Revocar">Revocar</button>
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
             <button onClick={handleLeave} title="Salir del debate" className="icon-btn exit-btn" aria-label="Salir">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M10 17l-5-5 5-5"/>
@@ -233,14 +330,24 @@ export default function DebateRoom() {
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={input}
-              onChange={(e) => handleTyping(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSend() }}
-              placeholder="Escribe tu mensaje"
-              style={{ flex: 1, padding: '10px 12px', background: '#0b1520', color: 'white', border: '1px solid #17324d', borderRadius: 6 }}
-            />
-            <button onClick={handleSend} style={{ padding: '10px 16px', background: '#00d4ff', color: '#05101a', border: 0, borderRadius: 6, fontWeight: 700 }}>Enviar</button>
+            {(() => {
+              const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+              const uid = user?._id || user?.id
+              const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid))
+              return (
+                <>
+                  <input
+                    value={input}
+                    onChange={(e) => handleTyping(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSend() }}
+                    placeholder={allowed ? 'Escribe tu mensaje' : 'No es tu turno'}
+                    disabled={!allowed}
+                    style={{ flex: 1, padding: '10px 12px', background: '#0b1520', color: 'white', border: '1px solid #17324d', borderRadius: 6, opacity: allowed ? 1 : 0.6 }}
+                  />
+                  <button onClick={handleSend} disabled={!allowed} style={{ padding: '10px 16px', background: '#00d4ff', color: '#05101a', border: 0, borderRadius: 6, fontWeight: 700, opacity: allowed ? 1 : 0.6 }}>Enviar</button>
+                </>
+              )
+            })()}
           </div>
         </div>
       </div>
@@ -250,8 +357,24 @@ export default function DebateRoom() {
           {debate.participants?.map((p) => (
             <div key={p.user?._id || p.user?.id} style={{ marginBottom: 8 }}>
               {p.user?.username || 'Usuario'}
+              {(() => {
+                const uid = user?._id || user?.id
+                const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
+                if (!isModerator) return null
+                const targetId = p.user?._id || p.user?.id
+                return (
+                  <>
+                    <button onClick={() => moderatorGrant(targetId)} className="icon-btn" style={{ marginLeft: 8 }}>Conceder</button>
+                  </>
+                )
+              })()}
             </div>
           ))}
+          {turnState.queue?.length > 0 && (
+            <div style={{ marginTop: 12, color: '#9aa', fontSize: 12 }}>
+              En cola: {turnState.queue.length}
+            </div>
+          )}
         </div>
       </div>
     </div>

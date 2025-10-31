@@ -18,6 +18,7 @@ export default function VoiceDebateRoom() {
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [speakingUsers, setSpeakingUsers] = useState(new Set()) // socketIds of users currently speaking
   const [mutedUsers, setMutedUsers] = useState(new Set()) // socketIds of muted users
+  const [turnState, setTurnState] = useState({ speakingUserId: null, turnEndsAt: null, queue: [], moderatorId: null })
 
   const localStreamRef = useRef(null)
   const peerConnectionsRef = useRef({}) // socketId -> RTCPeerConnection
@@ -33,6 +34,18 @@ export default function VoiceDebateRoom() {
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' }
     ]
+  }
+
+  // Turn helpers (voice)
+  const requestSpeak = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('request_speak', { debateId })
+  }
+  const cancelRequest = () => {
+    const s = getSocket()
+    if (!s) return
+    s.emit('cancel_request', { debateId })
   }
 
   useEffect(() => {
@@ -128,6 +141,28 @@ export default function VoiceDebateRoom() {
             navigate('/home')
           }
         })
+        s.on('turn_state', (payload) => {
+          if (!payload || payload.debateId !== debateId) return
+          const prevSpeakingUserId = turnState?.speakingUserId
+          setTurnState({
+            speakingUserId: payload.speakingUserId ?? null,
+            turnEndsAt: payload.turnEndsAt ?? null,
+            queue: payload.queue || [],
+            moderatorId: payload.moderatorId ?? null
+          })
+          // If lost turn while having audio, stop it
+          const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+          const uid = user?._id || user?.id
+          const nowSpeaking = payload.speakingUserId && String(payload.speakingUserId) === String(uid)
+          const wasSpeaking = prevSpeakingUserId && String(prevSpeakingUserId) === String(uid)
+          if (requiresTurn && audioEnabled && wasSpeaking && !nowSpeaking) {
+            stopAudio()
+          }
+        })
+        s.on('queue_updated', (payload) => {
+          if (!payload || payload.debateId !== debateId) return
+          setTurnState(prev => ({ ...prev, queue: payload.queue || [] }))
+        })
         s.on('debate_closed', ({ _id }) => {
           if (String(_id) === String(debateId)) {
             alert('El debate ha finalizado por tiempo.')
@@ -207,6 +242,8 @@ export default function VoiceDebateRoom() {
         s.off('debate_deleted')
         s.off('user_speaking')
         s.off('user_muted')
+        s.off('turn_state')
+        s.off('queue_updated')
         s.off('debate_closed')
       }
     }
@@ -548,6 +585,16 @@ export default function VoiceDebateRoom() {
           </div>
           <div className="header-actions">
             <div className="debate-mode">Modo: {debate.mode}</div>
+            {(debate.mode === 'Por turnos' || debate.mode === 'Moderado') && (
+              <div style={{ color: '#6cc', fontSize: 12 }}>
+                {(() => {
+                  const uid = user?._id || user?.id
+                  const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
+                  const remaining = turnState?.turnEndsAt ? Math.max(0, Math.floor((new Date(turnState.turnEndsAt).getTime() - Date.now())/1000)) : null
+                  return isYourTurn ? `Tu turno${remaining !== null ? ` • ${remaining}s` : ''}` : `Esperando turno${remaining !== null ? ` • ${remaining}s` : ''}`
+                })()}
+              </div>
+            )}
             <button onClick={handleLeave} title="Salir del debate" className="icon-btn exit-btn" aria-label="Salir">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M10 17l-5-5 5-5"/>
@@ -608,15 +655,41 @@ export default function VoiceDebateRoom() {
         </div>
 
         <div className="voice-controls">
-          {!audioEnabled ? (
-            <button 
-              onClick={startAudio} 
-              disabled={isConnecting}
-              className="btn-primary voice-control-btn"
-            >
-              {isConnecting ? 'Conectando...' : '🎤 Activar Micrófono'}
-            </button>
-          ) : (
+          {(() => {
+            const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+            const uid = user?._id || user?.id
+            const allowed = !requiresTurn || (turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid))
+            if (!audioEnabled) {
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  {(debate.mode === 'Por turnos' || debate.mode === 'Moderado') && !allowed && (
+                    <div style={{ color: '#9aa', fontSize: 12 }}>No es tu turno</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {(debate.mode === 'Moderado' || debate.mode === 'Por turnos') && !allowed && (
+                      <>
+                        {(() => {
+                          const inQueue = (turnState?.queue || []).some(id => String(id) === String(uid))
+                          return inQueue ? (
+                            <button onClick={cancelRequest} className="btn-control" title="Cancelar pedido">✋✖</button>
+                          ) : (
+                            <button onClick={requestSpeak} className="btn-control" title="Pedir turno">✋</button>
+                          )
+                        })()}
+                      </>
+                    )}
+                    <button 
+                      onClick={startAudio} 
+                      disabled={isConnecting || !allowed}
+                      className="btn-primary voice-control-btn"
+                    >
+                      {isConnecting ? 'Conectando...' : '🎤 Activar Micrófono'}
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+            return (
             <div className="active-controls">
               <button 
                 onClick={toggleMute} 
@@ -632,7 +705,8 @@ export default function VoiceDebateRoom() {
                 Desconectar Audio
               </button>
             </div>
-          )}
+            )
+          })()}
         </div>
       </div>
 
