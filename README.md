@@ -9,27 +9,23 @@
 **Materia:** Desarrollo de Sistemas  
 **Proyecto Integrador – 2025**  
 
----
 
 ## **Descripción del proyecto**
 
 **Deb8** es una aplicación web centrada en el debate formal y respetuoso.  
 Su objetivo es ofrecer un espacio donde las personas puedan intercambiar ideas de forma organizada, evitando la desinformación y los conflictos comunes en redes sociales.  
 
----
 
 ## **¿Cómo surge la idea o necesidad del proyecto?**
 
 La idea surge al notar que, en la era digital, muchas discusiones en internet se vuelven caóticas o agresivas.  
 **Deb8** busca recuperar el valor del diálogo racional mediante una plataforma estructurada, con reglas claras, moderación activa y herramientas que fomenten el pensamiento crítico.
 
----
 
 ## **Objetivo**
 
 Desarrollar una aplicación web funcional que permita a los usuarios crear y participar en debates por texto o voz, con modalidades configurables, registro de usuarios, sistema de sanciones y estadísticas personales.
 
----
 
 ## **Lista de Requerimientos**
 
@@ -48,7 +44,6 @@ Desarrollar una aplicación web funcional que permita a los usuarios crear y par
 - Sistema multilenguaje desde el lanzamiento.  
 - Diseño responsive.
 
----
 
 ## **Tecnologías utilizadas**
 
@@ -59,4 +54,3 @@ Desarrollar una aplicación web funcional que permita a los usuarios crear y par
 - **Autenticación:** Auth0  
 - **Hosting:** Vercel (frontend) y Firebase o Railway (backend)
 
----
