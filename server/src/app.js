@@ -2,6 +2,7 @@ import express from 'express'
 import morgan from 'morgan'
 import authRoutes from './routes/auth.routes.js'
 import debateRoutes from './routes/debate.routes.js'
+import userRoutes from './routes/user.routes.js'
 import cookieParser from 'cookie-parser'
 import errorHandler from './middlewares/errorHandler.js'
 import cors from 'cors'
@@ -28,6 +29,7 @@ app.use(cookieParser())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/debates', debateRoutes)
+app.use('/api/users', userRoutes)
 app.use(errorHandler) //middleware para manejar errores
 // Este middleware se ejecuta cuando no se encuentra la ruta, y se encarga de enviar un error 404 al cliente
 
