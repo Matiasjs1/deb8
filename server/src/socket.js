@@ -5,6 +5,10 @@ import Debate from './models/debate.model.js'
 // In-memory message store (MVP). For production, persist to Mongo.
 const messagesStore = new Map() // debateId -> [{ userId, username, content, ts }]
 
+// Turn system state per debate
+// debateId -> { speakingUserId, turnEndsAt, queue: [userId], moderatorId, turnTimer }
+const turnStates = new Map()
+
 // Keep a module-scoped reference to io so other modules (controllers)
 // can emit application-wide events.
 let ioRef = null
@@ -19,6 +23,75 @@ function parseCookies(cookieHeader = '') {
     acc[decodeURIComponent(key)] = decodeURIComponent(v.join('='))
     return acc
   }, {})
+}
+
+// Turn system helpers
+function getTurnState(debateId) {
+  if (!turnStates.has(debateId)) {
+    turnStates.set(debateId, {
+      speakingUserId: null,
+      turnEndsAt: null,
+      queue: [],
+      moderatorId: null,
+      turnTimer: null
+    })
+  }
+  return turnStates.get(debateId)
+}
+
+function emitTurnState(io, debateId) {
+  const state = getTurnState(debateId)
+  io.to(debateId).emit('turn_state', {
+    debateId,
+    speakingUserId: state.speakingUserId,
+    turnEndsAt: state.turnEndsAt,
+    queue: state.queue,
+    moderatorId: state.moderatorId
+  })
+}
+
+function startTurn(io, debateId, userId, durationSeconds = 60) {
+  const state = getTurnState(debateId)
+  
+  // Clear any existing timer
+  if (state.turnTimer) {
+    clearTimeout(state.turnTimer)
+  }
+  
+  state.speakingUserId = userId
+  state.turnEndsAt = new Date(Date.now() + durationSeconds * 1000).toISOString()
+  
+  // Set timer to auto-end turn
+  state.turnTimer = setTimeout(() => {
+    endTurn(io, debateId)
+  }, durationSeconds * 1000)
+  
+  emitTurnState(io, debateId)
+}
+
+function endTurn(io, debateId) {
+  const state = getTurnState(debateId)
+  
+  if (state.turnTimer) {
+    clearTimeout(state.turnTimer)
+    state.turnTimer = null
+  }
+  
+  state.speakingUserId = null
+  state.turnEndsAt = null
+  
+  emitTurnState(io, debateId)
+}
+
+function grantNextInQueue(io, debateId) {
+  const state = getTurnState(debateId)
+  
+  if (state.queue.length > 0) {
+    const nextUserId = state.queue.shift()
+    startTurn(io, debateId, nextUserId)
+  } else {
+    endTurn(io, debateId)
+  }
 }
 
 export function setupSockets(server) {
@@ -67,6 +140,13 @@ export function setupSockets(server) {
         if (!isParticipant) throw new Error('No eres participante de este debate')
 
         socket.join(debateId)
+        
+        // Initialize turn state if needed
+        const turnState = getTurnState(debateId)
+        if (!turnState.moderatorId && debate.author) {
+          turnState.moderatorId = debate.author._id ? debate.author._id.toString() : debate.author.toString()
+        }
+        
         // Send last messages if any
         const history = messagesStore.get(debateId) || []
         cb && cb({ ok: true, history, debate: {
@@ -74,7 +154,13 @@ export function setupSockets(server) {
           title: debate.title,
           mode: debate.mode,
           status: debate.status,
+          author: debate.author,
           participants: debate.participants.map(p => ({ id: p.user.id, username: p.user.username }))
+        }, turnState: {
+          speakingUserId: turnState.speakingUserId,
+          turnEndsAt: turnState.turnEndsAt,
+          queue: turnState.queue,
+          moderatorId: turnState.moderatorId
         } })
         socket.to(debateId).emit('system', { type: 'user_joined', userId: socket.user.id })
       } catch (error) {
@@ -235,6 +321,117 @@ export function setupSockets(server) {
         cb && cb({ ok: true })
       } catch (error) {
         cb && cb({ ok: false, error: error.message })
+      }
+    })
+
+    // Turn system events
+    socket.on('request_speak', async ({ debateId }) => {
+      try {
+        if (!debateId) return
+        const debate = await Debate.findById(debateId)
+        if (!debate) return
+        
+        const state = getTurnState(debateId)
+        const userId = socket.user.id
+        
+        // Check if user is already in queue or speaking
+        if (state.speakingUserId === userId) return
+        if (state.queue.includes(userId)) return
+        
+        if (debate.mode === 'Por turnos') {
+          // Auto-grant if no one is speaking
+          if (!state.speakingUserId) {
+            startTurn(io, debateId, userId)
+          } else {
+            // Add to queue
+            state.queue.push(userId)
+            io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+          }
+        } else if (debate.mode === 'Moderado') {
+          // Add to queue for moderator approval
+          state.queue.push(userId)
+          io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+        }
+      } catch (error) {
+        console.error('Error in request_speak:', error)
+      }
+    })
+    
+    socket.on('cancel_request', async ({ debateId }) => {
+      try {
+        if (!debateId) return
+        const state = getTurnState(debateId)
+        const userId = socket.user.id
+        
+        // Remove from queue
+        const index = state.queue.indexOf(userId)
+        if (index > -1) {
+          state.queue.splice(index, 1)
+          io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+        }
+      } catch (error) {
+        console.error('Error in cancel_request:', error)
+      }
+    })
+    
+    socket.on('moderator_grant', async ({ debateId, userId: targetUserId }) => {
+      try {
+        if (!debateId || !targetUserId) return
+        const debate = await Debate.findById(debateId)
+        if (!debate) return
+        
+        const state = getTurnState(debateId)
+        const moderatorId = socket.user.id
+        
+        // Verify moderator
+        if (state.moderatorId !== moderatorId) return
+        
+        // Remove from queue if present
+        const index = state.queue.indexOf(targetUserId)
+        if (index > -1) {
+          state.queue.splice(index, 1)
+        }
+        
+        // Grant turn
+        startTurn(io, debateId, targetUserId)
+      } catch (error) {
+        console.error('Error in moderator_grant:', error)
+      }
+    })
+    
+    socket.on('moderator_revoke', async ({ debateId }) => {
+      try {
+        if (!debateId) return
+        const debate = await Debate.findById(debateId)
+        if (!debate) return
+        
+        const state = getTurnState(debateId)
+        const moderatorId = socket.user.id
+        
+        // Verify moderator
+        if (state.moderatorId !== moderatorId) return
+        
+        endTurn(io, debateId)
+      } catch (error) {
+        console.error('Error in moderator_revoke:', error)
+      }
+    })
+    
+    socket.on('moderator_next', async ({ debateId }) => {
+      try {
+        if (!debateId) return
+        const debate = await Debate.findById(debateId)
+        if (!debate) return
+        
+        const state = getTurnState(debateId)
+        const moderatorId = socket.user.id
+        
+        // Verify moderator
+        if (state.moderatorId !== moderatorId) return
+        
+        grantNextInQueue(io, debateId)
+      } catch (error) {
+        console.error('Error in moderator_next:', error)
       }
     })
 
