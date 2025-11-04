@@ -50,7 +50,7 @@ function emitTurnState(io, debateId) {
   })
 }
 
-function startTurn(io, debateId, userId, durationSeconds = 60) {
+async function startTurn(io, debateId, userId, durationSeconds = 60) {
   const state = getTurnState(debateId)
   
   // Clear any existing timer
@@ -61,9 +61,16 @@ function startTurn(io, debateId, userId, durationSeconds = 60) {
   state.speakingUserId = userId
   state.turnEndsAt = new Date(Date.now() + durationSeconds * 1000).toISOString()
   
-  // Set timer to auto-end turn
-  state.turnTimer = setTimeout(() => {
-    endTurn(io, debateId)
+  // Set timer to auto-end turn and continue to next in queue
+  state.turnTimer = setTimeout(async () => {
+    const debate = await Debate.findById(debateId)
+    if (debate && debate.mode === 'Por turnos') {
+      // Auto-continue to next in queue for "Por turnos" mode
+      grantNextInQueue(io, debateId)
+    } else {
+      // Just end turn for other modes
+      endTurn(io, debateId)
+    }
   }, durationSeconds * 1000)
   
   emitTurnState(io, debateId)
@@ -339,13 +346,13 @@ export function setupSockets(server) {
         if (state.queue.includes(userId)) return
         
         if (debate.mode === 'Por turnos') {
+          // Automatic turn system - always add to queue
+          state.queue.push(userId)
+          io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+          
           // Auto-grant if no one is speaking
           if (!state.speakingUserId) {
-            startTurn(io, debateId, userId)
-          } else {
-            // Add to queue
-            state.queue.push(userId)
-            io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+            grantNextInQueue(io, debateId)
           }
         } else if (debate.mode === 'Moderado') {
           // Add to queue for moderator approval

@@ -273,6 +273,8 @@ export default function DebateRoom() {
                   })()}
                 </div>
                 {(() => {
+                  // Only show moderator grant button in Moderado mode
+                  if (debate.mode !== 'Moderado') return null
                   const uid = user?._id || user?.id
                   const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
                   if (isModerator && (turnState.queue?.length || 0) > 0) {
@@ -287,7 +289,8 @@ export default function DebateRoom() {
                 {(() => {
                   const uid = user?._id || user?.id
                   const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
-                  if (isModerator) return null
+                  // In Moderado mode, moderator doesn't need to request turns
+                  if (debate.mode === 'Moderado' && isModerator) return null
                   const inQueue = (turnState?.queue || []).some(id => String(id) === String(uid))
                   const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
                   return !isYourTurn ? (
@@ -299,6 +302,8 @@ export default function DebateRoom() {
                   ) : null
                 })()}
                 {(() => {
+                  // Only show moderator controls in Moderado mode
+                  if (debate.mode !== 'Moderado') return null
                   const uid = user?._id || user?.id
                   const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
                   if (!isModerator) return null
@@ -380,6 +385,8 @@ export default function DebateRoom() {
             <div key={p.user?._id || p.user?.id} style={{ marginBottom: 8 }}>
               {p.user?.username || 'Usuario'}
               {(() => {
+                // Only show moderator grant button in Moderado mode
+                if (debate.mode !== 'Moderado') return null
                 const uid = user?._id || user?.id
                 const isModerator = turnState?.moderatorId && String(turnState.moderatorId) === String(uid)
                 if (!isModerator) return null
