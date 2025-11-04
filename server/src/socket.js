@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import Debate from './models/debate.model.js'
 
 // Configurable turn duration (seconds)
-const TURN_DURATION_SECONDS = Number(process.env.TURN_DURATION_SECONDS || 20)
+const TURN_DURATION_SECONDS = Number(process.env.TURN_DURATION_SECONDS || 30)
 
 // In-memory message store (MVP). For production, persist to Mongo.
 const messagesStore = new Map() // debateId -> [{ userId, username, content, ts }]
