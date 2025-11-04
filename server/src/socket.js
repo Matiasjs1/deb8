@@ -286,6 +286,27 @@ export function setupSockets(server) {
       if (debateId) {
         socket.leave(debateId)
         socket.to(debateId).emit('system', { type: 'user_left', userId: socket.user.id })
+        // Cleanup turn state: remove from queue and handle active speaker leaving
+        const state = getTurnState(debateId)
+        // Remove from queue if present
+        const idx = state.queue.indexOf(socket.user.id)
+        if (idx > -1) {
+          state.queue.splice(idx, 1)
+          io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+        }
+        // If user was speaking, advance according to mode
+        if (state.speakingUserId === socket.user.id) {
+          // Try to get debate mode to decide behavior
+          Debate.findById(debateId).then((debate) => {
+            if (debate && debate.mode === 'Por turnos') {
+              grantNextInQueue(io, debateId)
+            } else {
+              endTurn(io, debateId)
+            }
+          }).catch(() => {
+            endTurn(io, debateId)
+          })
+        }
       }
     })
 
@@ -307,6 +328,17 @@ export function setupSockets(server) {
           return uid === socket.user.id
         })
         if (!isParticipant) throw new Error('No eres participante')
+
+        // Enforce server-side turn rules for non-libre modes
+        if (debate.mode === 'Por turnos' || debate.mode === 'Moderado') {
+          const state = getTurnState(debateId)
+          const isModerator = state.moderatorId && String(state.moderatorId) === String(socket.user.id)
+          const canBypass = debate.mode === 'Moderado' && isModerator
+          const isSpeaker = state.speakingUserId && String(state.speakingUserId) === String(socket.user.id)
+          if (!canBypass && !isSpeaker) {
+            throw new Error('No es tu turno para hablar')
+          }
+        }
 
         const userEntry = debate.participants.find(p => {
           const uid = (p.user && p.user._id) ? p.user._id.toString() : (p.user ? p.user.toString() : '')
@@ -442,8 +474,38 @@ export function setupSockets(server) {
       }
     })
 
-    socket.on('disconnect', () => {
-      // No-op; rooms auto-clean on disconnect
+    socket.on('disconnect', async () => {
+      // On disconnect, clean up queues and advance turn if needed
+      try {
+        for (const [debateId, state] of turnStates.entries()) {
+          let changed = false
+          // Remove from queue
+          const idx = state.queue.indexOf(socket.user.id)
+          if (idx > -1) {
+            state.queue.splice(idx, 1)
+            changed = true
+            io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
+          }
+          // If the disconnecting user was speaking, advance
+          if (state.speakingUserId === socket.user.id) {
+            try {
+              const debate = await Debate.findById(debateId)
+              if (debate && debate.mode === 'Por turnos') {
+                grantNextInQueue(io, debateId)
+              } else {
+                endTurn(io, debateId)
+              }
+            } catch (_) {
+              endTurn(io, debateId)
+            }
+          } else if (changed) {
+            // If only queue changed, still emit current turn state to keep clients synced
+            emitTurnState(io, debateId)
+          }
+        }
+      } catch (_) {
+        // ignore cleanup errors
+      }
     })
   })
 }
