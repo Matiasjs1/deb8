@@ -81,7 +81,7 @@ export default function DebateRoom() {
         })
         s.on('turn_state', (payload) => {
           if (!payload || payload.debateId !== debateId) return
-          const authorId = (resp?.debate?.author?._id || resp?.debate?.author?.id || resp?.debate?.author)
+          const authorId = (debate?.author?._id || debate?.author?.id || debate?.author)
           setTurnState(prev => ({
             speakingUserId: payload.speakingUserId ?? null,
             turnEndsAt: payload.turnEndsAt ?? null,

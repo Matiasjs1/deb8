@@ -95,6 +95,8 @@ function grantNextInQueue(io, debateId) {
   
   if (state.queue.length > 0) {
     const nextUserId = state.queue.shift()
+    // Notify queue change immediately
+    io.to(debateId).emit('queue_updated', { debateId, queue: state.queue })
     startTurn(io, debateId, nextUserId)
   } else {
     endTurn(io, debateId)
