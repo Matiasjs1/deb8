@@ -249,6 +249,16 @@ export default function VoiceDebateRoom() {
     }
   }, [debateId, navigate])
 
+  // Enforce: if no es tu turno y el micrófono está activo, desconectar audio
+  useEffect(() => {
+    const requiresTurn = debate?.mode === 'Por turnos' || debate?.mode === 'Moderado'
+    const uid = user?._id || user?.id
+    const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
+    if (requiresTurn && audioEnabled && !isYourTurn) {
+      stopAudio()
+    }
+  }, [turnState?.speakingUserId, debate?.mode, audioEnabled, user])
+
   const createPeerConnection = async (socketId, isInitiator) => {
     try {
       const pc = new RTCPeerConnection(ICE_SERVERS)
