@@ -16,6 +16,7 @@ export default function DebateRoom() {
   const [input, setInput] = useState('')
   const [typingUsers, setTypingUsers] = useState(new Set())
   const [turnState, setTurnState] = useState({ speakingUserId: null, turnEndsAt: null, queue: [], moderatorId: null })
+  const [nowTick, setNowTick] = useState(Date.now())
 
   const endRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -161,6 +162,12 @@ export default function DebateRoom() {
     }
   }, [debateId, navigate])
 
+  // Tick to update remaining seconds UI
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -268,7 +275,7 @@ export default function DebateRoom() {
                   {(() => {
                     const uid = user?._id || user?.id
                     const isYourTurn = turnState?.speakingUserId && String(turnState.speakingUserId) === String(uid)
-                    const remaining = turnState?.turnEndsAt ? Math.max(0, Math.floor((new Date(turnState.turnEndsAt).getTime() - Date.now())/1000)) : null
+                    const remaining = turnState?.turnEndsAt ? Math.max(0, Math.floor((new Date(turnState.turnEndsAt).getTime() - nowTick)/1000)) : null
                     return isYourTurn ? `Tu turno${remaining !== null ? ` • ${remaining}s` : ''}` : `Esperando turno${remaining !== null ? ` • ${remaining}s` : ''}`
                   })()}
                 </div>

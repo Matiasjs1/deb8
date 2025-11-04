@@ -2,6 +2,9 @@ import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
 import Debate from './models/debate.model.js'
 
+// Configurable turn duration (seconds)
+const TURN_DURATION_SECONDS = Number(process.env.TURN_DURATION_SECONDS || 20)
+
 // In-memory message store (MVP). For production, persist to Mongo.
 const messagesStore = new Map() // debateId -> [{ userId, username, content, ts }]
 
@@ -50,7 +53,7 @@ function emitTurnState(io, debateId) {
   })
 }
 
-async function startTurn(io, debateId, userId, durationSeconds = 60) {
+async function startTurn(io, debateId, userId, durationSeconds = TURN_DURATION_SECONDS) {
   const state = getTurnState(debateId)
   
   // Clear any existing timer
