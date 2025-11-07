@@ -4,6 +4,7 @@ import DebateArchive from '../models/debateArchive.model.js'
 import { getIO } from '../socket.js'
 import { logAction } from '../utils/logAction.js'
 import appError from '../libs/appError.js'
+import UserArchive from '../models/userArchive.model.js'
 
 export const deleteMe = async (req, res, next) => {
   try {
@@ -52,6 +53,21 @@ export const deleteMe = async (req, res, next) => {
     }
 
     // Delete user
+    // Archive user
+    const user = await User.findById(userId)
+    if (user) {
+      await UserArchive.create({
+        originalUserId: user._id,
+        username: user.username,
+        email: user.email,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        deletedAt: new Date(),
+        deleteReason: 'user_deleted'
+      })
+      await logAction({ action: 'user_archived', userId, targetType: 'User', targetId: userId, metadata: {}, req })
+    }
+
     await User.findByIdAndDelete(userId)
     await logAction({ action: 'user_deleted', userId, targetType: 'User', targetId: userId, metadata: {}, req })
 

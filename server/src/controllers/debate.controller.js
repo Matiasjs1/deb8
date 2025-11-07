@@ -3,6 +3,8 @@ import User from '../models/user.model.js'
 import { catchAsync } from '../utils/catchAsync.js'
 import appError from '../libs/appError.js'
 import { getIO } from '../socket.js'
+import { logAction } from '../utils/logAction.js'
+import DebateArchive from '../models/debateArchive.model.js'
 
 export const createDebate = catchAsync(async (req, res, next) => {
     const { title, description, maxParticipants, duration, format, mode, tags } = req.body
@@ -46,6 +48,8 @@ export const createDebate = catchAsync(async (req, res, next) => {
         })
     }
 
+    await logAction({ action: 'debate_created', userId: req.user.id, targetType: 'Debate', targetId: debate._id, metadata: { title }, req })
+
     res.status(201).json({
         status: 'success',
         data: {
@@ -59,6 +63,8 @@ export const getAllDebates = catchAsync(async (req, res, next) => {
         .populate('author', 'username')
         .populate('participants.user', 'username')
         .sort({ createdAt: -1 })
+
+    await logAction({ action: 'debates_list_viewed', userId: req.user?.id, targetType: 'Debate', targetId: null, metadata: { count: debates.length }, req })
 
     res.status(200).json({
         status: 'success',
@@ -77,6 +83,8 @@ export const getDebate = catchAsync(async (req, res, next) => {
     if (!debate) {
         return next(new appError('No se encontró el debate', 404))
     }
+
+    await logAction({ action: 'debate_viewed', userId: req.user?.id, targetType: 'Debate', targetId: debate._id, metadata: {}, req })
 
     res.status(200).json({
         status: 'success',
@@ -142,6 +150,8 @@ export const joinDebate = catchAsync(async (req, res, next) => {
         })
     }
 
+    await logAction({ action: 'debate_joined', userId: req.user.id, targetType: 'Debate', targetId: debate._id, metadata: {}, req })
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -193,6 +203,8 @@ export const leaveDebate = catchAsync(async (req, res, next) => {
         })
     }
 
+    await logAction({ action: 'debate_left', userId: req.user.id, targetType: 'Debate', targetId: debate._id, metadata: {}, req })
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -232,6 +244,10 @@ export const updateDebate = catchAsync(async (req, res, next) => {
         })
     }
 
+    if (updatedDebate) {
+        await logAction({ action: 'debate_updated', userId: req.user.id, targetType: 'Debate', targetId: updatedDebate._id, metadata: { updates: req.body }, req })
+    }
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -252,6 +268,26 @@ export const deleteDebate = catchAsync(async (req, res, next) => {
         return next(new appError('Solo el autor puede eliminar el debate', 403))
     }
 
+    // Archivar el debate antes de eliminarlo
+    await DebateArchive.create({
+        originalDebateId: debate._id,
+        title: debate.title,
+        description: debate.description,
+        author: debate.author,
+        maxParticipants: debate.maxParticipants,
+        currentParticipants: debate.currentParticipants,
+        duration: debate.duration,
+        format: debate.format,
+        mode: debate.mode,
+        tags: debate.tags,
+        status: debate.status,
+        participants: debate.participants,
+        createdAt: debate.createdAt,
+        updatedAt: debate.updatedAt,
+        deletedAt: new Date(),
+        deleteReason: 'manual_delete'
+    })
+
     await Debate.findByIdAndDelete(req.params.id)
 
     // Emitir evento global y a la sala
@@ -261,6 +297,8 @@ export const deleteDebate = catchAsync(async (req, res, next) => {
         io.emit('debate_deleted', { _id: idStr })
         io.to(idStr).emit('debate_deleted', { _id: idStr })
     }
+
+    await logAction({ action: 'debate_archived_and_deleted', userId: req.user.id, targetType: 'Debate', targetId: debate._id, metadata: { reason: 'manual_delete' }, req })
 
     res.status(204).json({
         status: 'success',
