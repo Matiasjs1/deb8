@@ -84,6 +84,71 @@ body {
   letter-spacing: 1px;
 }
 
+/* FAQ Section */
+.faq-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 80px;
+}
+
+.faq-container {
+  width: 100%;
+  max-width: 900px;
+}
+
+.faq-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #e2e8f0;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #4a5568;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  color: #f7fafc;
+  border: none;
+  text-align: left;
+  padding: 16px 18px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.faq-question:hover {
+  background: rgba(66, 153, 225, 0.08);
+}
+
+.faq-icon {
+  transition: transform 0.2s ease;
+}
+
+.faq-icon.open {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  padding: 0 18px 16px;
+  color: #cbd5e0;
+  line-height: 1.6;
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
@@ -195,6 +260,14 @@ body {
   .welcome-title {
     font-size: 36px;
     padding: 0 20px;
+  }
+
+  .faq-title {
+    font-size: 22px;
+  }
+
+  .faq-question {
+    font-size: 15px;
   }
 
   .modal {

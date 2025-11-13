@@ -33,15 +33,15 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogIn }) {
         })}>
           <div className="form-group">
             <label htmlFor="register-email">Email</label>
-            <input type="email" {...register("email",{required:true})} id="register-email" placeholder="Value" />
+            <input type="email" {...register("email",{required:true})} id="register-email" placeholder="Ingrese su email" />
           </div>
           <div className="form-group">
             <label htmlFor="register-username">Username</label>
-            <input type="text" {...register("username",{required:true})} id="register-username" placeholder="Value" required />
+            <input type="text" {...register("username",{required:true})} id="register-username" placeholder="Ingrese un nombre de usuario" required />
           </div>
           <div className="form-group">
             <label htmlFor="register-password">Contraseña</label>
-            <input type="password" {...register("password",{required:true})} id="register-password" placeholder="Value" required />
+            <input type="password" {...register("password",{required:true})} id="register-password" placeholder="Ingrese una contraseña" required />
           </div>
           <button type="submit" className="submit-btn">
             Registrarse

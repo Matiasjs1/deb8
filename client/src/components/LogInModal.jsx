@@ -37,11 +37,11 @@ function LogInModal({ isOpen, onClose, onSwitchToRegister }) {
         })}>
           <div className="form-group">
             <label htmlFor="login-email">Email</label>
-            <input type="email" {...register("email",{required:true})} id="login-email" placeholder="Value"/>
+            <input type="email" {...register("email",{required:true})} id="login-email" placeholder="Ingrese su usuario"/>
           </div>
           <div className="form-group">
             <label htmlFor="login-password">Contraseña</label>
-            <input type="password" {...register("password",{required:true})} id="login-password" placeholder="Value"/>
+            <input type="password" {...register("password",{required:true})} id="login-password" placeholder="Ingrese su contraseña"/>
           </div>
           <button type="submit" className="submit-btn">
             Iniciar sesión
