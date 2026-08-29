@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: deb8
+    runtime: node
+    plan: free
+    buildCommand: cd client && npm install && npm run build && cd ../server && npm install
+    startCommand: cd server && node src/server.js
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TOKEN_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: TURN_DURATION_SECONDS
+        value: "30"

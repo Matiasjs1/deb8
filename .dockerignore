@@ -1,0 +1,12 @@
+# Keep the build context lean
+node_modules
+**/node_modules
+.git
+.gitignore
+*.log
+.env
+.env.*
+server/.env
+client/.env
+# The client dist is rebuilt inside Stage 1; don't ship a stale copy
+client/dist
