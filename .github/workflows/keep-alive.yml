@@ -1,0 +1,23 @@
+name: Keep Deb8 awake (Render free)
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # cada 5 minutos -> nunca llega al idle de 15 min
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Ping the Render app
+        env:
+          DEB8_URL: ${{ vars.DEB8_URL }}
+        run: |
+          if [ -z "$DEB8_URL" ]; then
+            echo "::warning::Configura la variable de repositorio DEB8_URL (Settings -> Secrets and variables -> Actions -> Variables)."
+            exit 0
+          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$DEB8_URL" || echo "000")
+          echo "HTTP $code -> $DEB8_URL"
